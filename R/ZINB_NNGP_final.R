@@ -5,17 +5,17 @@ library(MCMCpack) # For Iwish update of Sigmab
 library(msm) # For tnorm function
 library(spam) # For sparse Matrix
 library(Matrix) # For block matrix
+library(MASS)
 library(spNNGP)
 library(LaplacesDemon)
-source("~/Documents/project/zigp/ZINB/MatrixNormal/functions/NNMatrix.R")
-source("~/Documents/project/zigp/ZINB/MatrixNormal/functions/estimation.R") # matrix normal version
-source("~/Documents/project/zigp/ZINB/MatrixNormal/functions/NNGP_getAD_collapse.R")
+source("NNMatrix.R")
+source("estimation.R") # matrix normal version
+source("NNGP_getAD_collapse.R")
 
 ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1, save_ypred = FALSE) {
     # X is the design matrix with dimension N*p
     # x is the vector with length N
     # y is the count response with length N
-
     n <- nrow(coords) # number of clusters
     N <- nrow(X) # number of observations
     p <- ncol(X) # dimension of alpha and beta

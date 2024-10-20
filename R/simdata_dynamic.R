@@ -1,30 +1,32 @@
-rm(list = ls())
 library(mvtnorm)
+library(Matrix)
 
-set.seed(12072021)
 ##################
 # Parameter Setting #
 ##################
 n <- 200 # Number of spatial units
 n_time_points <- 20
-n_unit_mat <- matrix(rpois(n * n_time_points, 2), nrow = n, byrow = T) # number of obs in each sampling unit
+n_unit_mat <- matrix(rpois(n * n_time_points, 2), nrow = n, byrow = TRUE) # number of obs in each sampling unit
 
 N <- sum(n_unit_mat)
 id <- c()
-for (i in 1:nrow(n_unit_mat)) {
+for (i in seq_len(nrow(n_unit_mat))) {
     id <- c(id, rep(i, sum(n_unit_mat[i, ])))
 }
+
 tp_seq <- c()
-for (j in 1:ncol(n_unit_mat)) {
+for (j in seq_len(ncol(n_unit_mat))) {
     tp_seq <- c(tp_seq, rep(j, sum(n_unit_mat[, j])))
 }
+
 # spatial design matrix
-library(Matrix)
 Vs <- as.matrix(sparseMatrix(i = 1:N, j = id, x = rep(1, N)))
 Vs[1:15, 1:10]
+
 # temporal design matrix
 Vt <- as.matrix(sparseMatrix(i = 1:N, j = tp_seq, x = rep(1, N)))
 Vt[1:15, 1:10]
+
 ##################
 # Generate Data  #
 ##################
@@ -79,6 +81,7 @@ true.eps1t <- eps1t <- t(rmvnorm(n = 1, sigma = diag(sigma_eps1t^2, nrow = n_tim
 true.eps2t <- eps2t <- t(rmvnorm(n = 1, sigma = diag(sigma_eps2t^2, nrow = n_time_points)))
 summary(true.eps1t)
 summary(true.eps2t)
+
 #################
 # Binomial Simulation #
 #################
@@ -90,19 +93,18 @@ eta1 <- X %*% alpha + phi1 + Vs %*% eps1s + Vt %*% eps1t
 plot(X %*% alpha, eta1)
 boxplot(phi1[, 1])
 
-pi <- exp(eta1) / (1 + exp(eta1)) # 1-pr("structural zero")
+p_at_risk <- exp(eta1) / (1 + exp(eta1)) # 1-pr("structural zero")
 
 # plot for the binomial part
 par(mfrow = c(2, 2))
 boxplot(X %*% alpha, main = "x*alpha")
 boxplot(phi1[, 1], main = "phi1")
 boxplot(eta1[, 1], main = "eta1=X%*%alpha+phi1")
-boxplot(pi[, 1], main = "pi=exp(eta1)/(1+exp(eta1))")
+boxplot(p_at_risk[, 1], main = "pi=exp(eta1)/(1+exp(eta1))")
 
-u <- rbinom(N, 1, pi[, 1]) # at-risk indicator
+u <- rbinom(N, 1, p_at_risk[, 1]) # at-risk indicator
 N1 <- sum(u)
 pstruct0 <- 1 - mean(u) # Proportion of structural zeros
-# boxplot(phi2*x)
 
 
 tmp <- u
@@ -136,6 +138,6 @@ barplot(tmp, ylab = "Percent", xlab = "Count", col = "lightblue")
 
 save(
     list = ls(all.names = TRUE),
-    file = "/Users/qinghe/Documents/project/zigp/ZINB/simulation/simdata_dynamic.RData",
+    file = "./simdata/simdata_dynamic.RData",
     envir = .GlobalEnv
 )
