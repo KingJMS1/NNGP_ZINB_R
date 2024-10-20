@@ -1,12 +1,12 @@
 estimate <- function(X, alpha, beta, Vs, Vt, a, b, c, d, eps1s, eps1t, eps2s, eps2t, r) {
     N <- nrow(X)
-    eta1 <- X %*% alpha + Vs %*% a + Vt %*% b + Vs %*% eps1s + Vt %*% eps1t
+    eta1 <- X %*% alpha + Vs %*% (a + eps1s) + Vt %*% (b + eps1t)
     p_at_risk <- pmax(0.01, pmin(0.99, exp(eta1) / (1 + exp(eta1)))) # at-risk probability
     u <- rbinom(N, 1, p_at_risk) # at-risk indicator
     if (ncol(X) == 1) {
         eta2 <- X[u == 1, ] * beta + Vs[u == 1, ] %*% c + Vt[u == 1, ] %*% d + Vs[u == 1, ] %*% eps2s + Vt[u == 1, ] %*% eps2t # Linear predictor for count part
     } else {
-        eta2 <- X[u == 1, ] %*% beta + Vs[u == 1, ] %*% c + Vt[u == 1, ] %*% d + Vs[u == 1, ] %*% eps2s + Vt[u == 1, ] %*% eps2t # Linear predictor for count part
+        eta2 <- X[u == 1, ] %*% beta + Vs[u == 1, ] %*% (c + eps2s) + Vt[u == 1, ] %*% (d + eps2t) # Linear predictor for count part
     }
     psi <- pmax(0.01, pmin(0.99, exp(eta2) / (1 + exp(eta2)))) # Prob of success
 
