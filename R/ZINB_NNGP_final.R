@@ -89,10 +89,10 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
     ##########################
     # Spatial Random Effects #
     ##########################
-    phi_bin <- phi_nb <- a_phi / b_phi
+    l1s <- l2s <- a_phi / b_phi
     sigma1s <- sigma2s <- sqrt(b_sigmas / (a_sigmas - 1))
-    Ks_bin <- sigma1s^2 * exp(-phi_bin * Ds)
-    Ks_nb <- sigma2s^2 * exp(-phi_nb * Ds)
+    Ks_bin <- sigma1s^2 * exp(-l1s * Ds)
+    Ks_nb <- sigma2s^2 * exp(-l2s * Ds)
     a <- t(rmvnorm(n = 1, sigma = Ks_bin))
     c <- t(rmvnorm(n = 1, sigma = Ks_nb))
 
@@ -158,8 +158,8 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
     )
     XV <- cbind(X, Vs, Vt)
     for (i in 1:nsim)   {
-        Ks_bin <- sigma1s^2 * exp(-phi_bin * Ds)
-        Ks_nb <- sigma2s^2 * exp(-phi_nb * Ds)
+        Ks_bin <- sigma1s^2 * exp(-l1s * Ds)
+        Ks_nb <- sigma2s^2 * exp(-l2s * Ds)
         Kt_bin <- sigma1t^2 * exp(-Dt / (l1t^2))
         Kt_nb <- sigma2t^2 * exp(-Dt / (l2t^2))
         Sigma0_bin.inv <- as.matrix(Matrix::bdiag(
@@ -248,17 +248,17 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         sigma1t <- sqrt(sigma1t.sq)
 
         # update phi_bin using M-H
-        phi_bin_star <- stats::rnorm(1, phi_bin, 2) # proposal dist
+        phi_bin_star <- stats::rnorm(1, l1s, 2) # proposal dist
 
         if (phi_bin_star < 16 & phi_bin_star > 0) {
             Ks_bin_star <- sigma1s^2 * exp(-phi_bin_star * Ds)
             likelihood_phi_bin <- dmvnorm(a, mean = rep(0, n), sigma = Ks_bin_star, log = T) - dmvnorm(a, mean = rep(0, n), sigma = Ks_bin, log = T)
-            prior_phi_bin <- stats::dgamma(x = phi_bin_star, shape = a_phi, rate = b_phi, log = T) - stats::dgamma(x = phi_bin, shape = a_phi, rate = b_phi, log = T)
+            prior_phi_bin <- stats::dgamma(x = phi_bin_star, shape = a_phi, rate = b_phi, log = T) - stats::dgamma(x = l1s, shape = a_phi, rate = b_phi, log = T)
             posterior_phi_bin <- likelihood_phi_bin + prior_phi_bin # prior ratio may get too large and dominate
 
             if (!is.na(posterior_phi_bin)) {
                 if (log(stats::runif(1)) < posterior_phi_bin) {
-                    phi_bin <- phi_bin_star
+                    l1s <- phi_bin_star
                 }
             }
         }
@@ -271,7 +271,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         ) # replace the input NNmatrix
         AD <- getAD(
             neardist = NN.matrix$NN_dist, neardistM = NN.matrix$NN_distM,
-            N = n, M = M, phi = phi_bin
+            N = n, M = M, phi = l1s
         )
 
         Dm <- AD[M + 1, ]
@@ -354,18 +354,18 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         sigma2t.sq <- LaplacesDemon::rinvgamma(n = 1, shape = a_new, scale = b_new)
         sigma2t <- sqrt(sigma2t.sq)
 
-        # update phi_nb using M-H
-        phi_nb_star <- stats::rnorm(1, phi_nb, 1)
-        if ((phi_nb_star < 16) && (phi_nb_star > 0)) {
-            Ks_nb_star <- sigma2s^2 * exp(-phi_nb_star * Ds)
+        # update l2s using M-H
+        l2s_star <- stats::rnorm(1, l2s, 1)
+        if ((l2s_star < 16) && (l2s_star > 0)) {
+            Ks_nb_star <- sigma2s^2 * exp(-l2s_star * Ds)
             likelihood_phi_nb <- dmvnorm(c, mean = rep(0, n), sigma = Ks_nb_star, log = T) -
                 dmvnorm(c, mean = rep(0, n), sigma = Ks_nb, log = T)
-            prior_phi_nb <- stats::dgamma(x = phi_nb_star, shape = a_phi, rate = b_phi, log = T) -
-                stats::dgamma(x = phi_nb, shape = a_phi, rate = b_phi, log = T)
-            posterior_phi_nb <- likelihood_phi_nb + prior_phi_nb
-            if (!is.na(posterior_phi_nb)) {
-                if (log(stats::runif(1)) < posterior_phi_nb) {
-                    phi_nb <- phi_nb_star
+            prior_phi_nb <- stats::dgamma(x = l2s_star, shape = a_phi, rate = b_phi, log = T) -
+                stats::dgamma(x = l2s, shape = a_phi, rate = b_phi, log = T)
+            posterior_l2s <- likelihood_phi_nb + prior_phi_nb
+            if (!is.na(posterior_l2s)) {
+                if (log(stats::runif(1)) < posterior_l2s) {
+                    l2s <- l2s_star
                 }
             }
         }
@@ -378,7 +378,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         ) # replace the input NNmatrix
         AD <- getAD(
             neardist = NN.matrix$NN_dist, neardistM = NN.matrix$NN_distM,
-            N = n, M = M, phi = phi_nb
+            N = n, M = M, phi = l2s
         )
         Dm <- AD[M + 1, ]
         ind_x <- c(c(rep(2:M, times = 1:(M - 1)), rep(((M + 1):n), each = M)), 1:n)
@@ -430,9 +430,9 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
             Sigma1t[j] <- sigma1t # temporal hyperparameters
             L2t[j] <- l2t
             Sigma2t[j] <- sigma2t # temporal hyperparameters
-            Phi_bin[j] <- phi_bin
+            Phi_bin[j] <- l1s
             Sigma1s[j] <- sigma1s # spatial hyperparameters
-            Phi_nb[j] <- phi_nb
+            Phi_nb[j] <- l2s
             Sigma2s[j] <- sigma2s # spatial hyperparameters
             Sigma_eps1s[j] <- sigma_eps1s
             Sigma_eps2s[j] <- sigma_eps2s # random noise parameters
