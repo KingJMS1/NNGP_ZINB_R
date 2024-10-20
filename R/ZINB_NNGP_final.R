@@ -1,4 +1,3 @@
-################################# this is the first version of matrix normal
 library(BayesLogit) # For rpg function -- install from ZIP file
 library(mvtnorm)
 library(MCMCpack) # For Iwish update of Sigmab
@@ -8,8 +7,9 @@ library(Matrix) # For block matrix
 library(MASS)
 library(spNNGP)
 library(LaplacesDemon)
+
 source("NNMatrix.R")
-source("estimation.R") # matrix normal version
+source("estimation.R")
 source("NNGP_getAD_collapse.R")
 
 ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1, save_ypred = FALSE) {
@@ -356,15 +356,15 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
 
         # update phi_nb using M-H
         phi_nb_star <- stats::rnorm(1, phi_nb, 1)
-        if (phi_nb_star < 16 & phi_nb_star > 0) {
+        if ((phi_nb_star < 16) && (phi_nb_star > 0)) {
             Ks_nb_star <- sigma2s^2 * exp(-phi_nb_star * Ds)
             likelihood_phi_nb <- dmvnorm(c, mean = rep(0, n), sigma = Ks_nb_star, log = T) -
                 dmvnorm(c, mean = rep(0, n), sigma = Ks_nb, log = T)
             prior_phi_nb <- stats::dgamma(x = phi_nb_star, shape = a_phi, rate = b_phi, log = T) -
                 stats::dgamma(x = phi_nb, shape = a_phi, rate = b_phi, log = T)
             posterior_phi_nb <- likelihood_phi_nb + prior_phi_nb
-            if (!is.na(posterior_phi_bin)) {    ## THIS IS A BUG!
-                if (log(stats::runif(1)) < posterior_phi_bin) {
+            if (!is.na(posterior_phi_nb)) {
+                if (log(stats::runif(1)) < posterior_phi_nb) {
                     phi_nb <- phi_nb_star
                 }
             }
