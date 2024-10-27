@@ -1,14 +1,13 @@
-rm(list = ls())
-load("/Users/qinghe/Documents/project/zigp/ZINB/simulation/simdata_dynamic.RData")
-source("~/Documents/project/zigp/ZINB/ZINB_NNGP_final.R")
-source("~/Documents/project/zigp/ZINB/plots_ZINB_NNGP_MV_V3.R")
+load("simdata/simdata_dynamic.RData")
+source("ZINB_NNGP_final.R")
+source("plots_ZINB_NNGP_MV_V3.R")
 nsim <- 20000
 burn <- 2000
 thin <- 5
 M <- 19
 save_ypred <- TRUE
 results <- ZINB_NNGP(
-    X = X, x = x, y = y, coords = coords, nis = NULL, Vs = Vs, Vt = Vt, Ds = Ds,
+    X = X, y = y, coords = coords, Vs = Vs, Vt = Vt, Ds = Ds,
     Dt = Dt, M = M, nsim = nsim, burn = burn, thin = thin, save_ypred = save_ypred
 )
 save_location <- "/Users/qinghe/Documents/project/zigp/ZINB/simulation/output/"
@@ -59,7 +58,7 @@ test_data %>%
 
 ############################################################
 Y_pred <- results$Y_pred
-Y_pred_tp <- matrix(nrow = nrow(Y_pred), ncol = n_time_points)
+Y_pred_tp <- matrix(nrow = nrow(Y_pred), ncol = num_temporal)
 for (i in 1:nrow(Y_pred_tp)) {
     Y_pred_tp[i, ] <- tapply(Y_pred[i, ], tp_seq, mean)
 }

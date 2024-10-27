@@ -1,4 +1,4 @@
-library(BayesLogit) # For rpg function -- install from ZIP file
+library(BayesLogit) # For rpg function
 library(mvtnorm)
 library(MCMCpack) # For Iwish update of Sigmab
 library(msm) # For tnorm function
@@ -12,7 +12,31 @@ source("NNMatrix.R")
 source("estimation.R")
 source("NNGP_getAD_collapse.R")
 
+#' Run the ZINB NNGP model described in https://doi.org/10.1016/j.jspi.2023.106098.
+#'
+#' @param X Other Predictor variables
+#' @param y Zero inflated count response
+#' @param coords Spatial coordinates for NNGP
+#' @param Vs   Spatially varying predictor variables (e.g. one-hot indication of which location this is for varying intercept), wrapped in sparseMatrix from Matrix R package. Will be multiplied by the spatial random effects for prediction.
+#' @param Vt   Temporal varying predictor variables, wrapped in sparseMatrix from Matrix R package. Will be multiplied by the temporal random effects for prediction.
+#' @param Ds   Spatial distance matrix, diagonal should be 0, off diagonal is distance between elements i and j in space, inputs to the spatial NNGP kernel
+#' @param Dt   Temporal distance matirx, diagonal should be 0, off diagonal is distance between elements i and j in time, inputs to the temporal GP kernel
+#' @param M    How many neighbors to allow in the spatial NNGP algorithm, defaults to 10.
+#' @param nsim How long to run MCMC in total, must be greater than burn.
+#' @param burn How long to run MCMC before saving samples.
+#' @param thin How often to save MCMC samples, default is 1, saves every iteration.
+#' @param save_ypred Whether or not to output the predicted values at every iteration
+#' @return A List of the following sampled values: \cr         
+#' Alpha, Beta, A, B, C, D, \cr
+#' Eps1s, Eps2s, Eps1t, Eps2t, \cr
+#' L1t, Sigma1t, L2t, Sigma2t, \cr
+#' Phi_bin, Sigma1s, Phi_nb, Sigma2s, \cr
+#' Sigma_eps1s, Sigma_eps2s, Sigma_eps1t, Sigma_eps2t, \cr
+#' R, R2, Y_pred if save_YPRED = TRUE
 ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1, save_ypred = FALSE) {
+    # TODO: Break down the Gibbs sampling and test all steps independently
+    # TODO: Remove the need to compute Ds, Dt manually, take in coords for both instead so you can NNGP with large datasets
+
     # X is the design matrix with dimension N*p
     # x is the vector with length N
     # y is the count response with length N
@@ -143,7 +167,6 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
     Sigma_eps2s <- rep(0, lastit)
     Sigma_eps1t <- rep(0, lastit)
     Sigma_eps2t <- rep(0, lastit)
-    NIS1 <- rep(0, lastit)
     if (save_ypred == TRUE) {
         Y_pred <- matrix(NA, lastit, N)
     }
@@ -161,7 +184,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         Ks_bin <- sigma1s^2 * exp(-l1s * Ds)
         Ks_nb <- sigma2s^2 * exp(-l2s * Ds)
         Kt_bin <- sigma1t^2 * exp(-Dt / (l1t^2))
-        Kt_nb <- sigma2t^2 * exp(-Dt / (l2t^2))
+        Kt_nb <- sigma2t^2 * exp(-Dt / (l2t^2)) # TODO: Recomputation of above variables here seems unnecessary
         Sigma0_bin.inv <- as.matrix(Matrix::bdiag(
             FastGP::rcppeigen_invert_matrix(Ks_bin),
             FastGP::rcppeigen_invert_matrix(Kt_bin)
@@ -173,10 +196,12 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         T0_bin <- as.matrix(Matrix::bdiag(T0a, Sigma0_bin.inv))
         T0_nb <- as.matrix(Matrix::bdiag(T0b, Sigma0_nb.inv))
 
-        # Update alpha, a, b
+        # Update latent variable z
         mu <- X %*% alpha + Vs %*% a + Vt %*% b + Vs %*% eps1s + Vt %*% eps1t
         w <- rpg(N, 1, mu[, 1])
         z <- (y1 - 1 / 2) / w
+
+        # Update alpha, a, b
         v <- FastGP::rcppeigen_invert_matrix(crossprod(sqrt(w) * XV) + T0_bin)
         m <- v %*% (t(sqrt(w) * XV) %*% (sqrt(w) * (z - Vs %*% eps1s - Vt %*% eps1t)))
         alphaab <- c(rmvnorm(1, m[, 1], v))
@@ -205,8 +230,8 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
 
         # Update r
         rnew <- rtnorm(1, r, sqrt(s), lower = 0) # Treat r as continuous
-        ratio <- sum(dnbinom(y[y1 == 1], rnew, q[y1 == 1], log = T)) - sum(dnbinom(y[y1 == 1], r, q[y1 == 1], log = T)) +
-            dtnorm(r, rnew, sqrt(s), 0, log = T) - dtnorm(rnew, r, sqrt(s), 0, log = T) # Uniform Prior for R
+        ratio <- sum(dnbinom(y[y1 == 1], rnew, q[y1 == 1], log = TRUE)) - sum(dnbinom(y[y1 == 1], r, q[y1 == 1], log = TRUE)) +
+            dtnorm(r, rnew, sqrt(s), 0, log = TRUE) - dtnorm(rnew, r, sqrt(s), 0, log = TRUE) # Uniform Prior for R
         # Proposal not symmetric
         if (log(runif(1)) < ratio) {
             r <- rnew
@@ -216,7 +241,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         # Update latent counts, l
         l <- rep(0, N1)
         ytmp <- y[y1 == 1]
-        for (j in 1:N1) l[j] <- sum(rbinom(ytmp[j], 1, round(r / (r + 1:ytmp[j] - 1), 6))) # Could try to avoid loop; rounding avoids numerical stability
+        for (j in 1:N1) l[j] <- sum(rbinom(ytmp[j], 1, round(r / (r + 1:ytmp[j] - 1), 6))) # Could try to avoid loop; rounding avoids numerical instability
 
         # Update r from conjugate gamma distribution given l and psi
         psi <- exp(eta2[y1 == 1]) / (1 + exp(eta2[y1 == 1]))
@@ -224,12 +249,12 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
 
         # update l1t, sigma1t
         l1t_star <- stats::rnorm(1, l1t, sd_l)
-        if (l1t_star < 5 & l1t_star > 0) {
+        if ((l1t_star < 5) && (l1t_star > 0)) {
             Kt_bin_star <- sigma1t^2 * exp(-Dt / (l1t_star^2))
-            likelihood_l1t <- dmvnorm(b, mean = rep(0, n_time_points), sigma = Kt_bin_star, log = T) -
-                dmvnorm(b, mean = rep(0, n_time_points), sigma = Kt_bin, log = T)
-            prior_l1t <- stats::dgamma(x = l1t_star, shape = a_lt, rate = b_lt, log = T) -
-                stats::dgamma(x = l1t, shape = a_lt, rate = b_lt, log = T)
+            likelihood_l1t <- dmvnorm(b, mean = rep(0, n_time_points), sigma = Kt_bin_star, log = TRUE) -
+                dmvnorm(b, mean = rep(0, n_time_points), sigma = Kt_bin, log = TRUE)
+            prior_l1t <- stats::dgamma(x = l1t_star, shape = a_lt, rate = b_lt, log = TRUE) -
+                stats::dgamma(x = l1t, shape = a_lt, rate = b_lt, log = TRUE)
             posterior_l1t <- likelihood_l1t + prior_l1t # prior ratio may get too large and dominate
 
             if (!is.na(posterior_l1t)) {
@@ -250,10 +275,10 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         # update phi_bin using M-H
         phi_bin_star <- stats::rnorm(1, l1s, 2) # proposal dist
 
-        if (phi_bin_star < 16 & phi_bin_star > 0) {
+        if ((phi_bin_star < 16) && (phi_bin_star > 0)) {
             Ks_bin_star <- sigma1s^2 * exp(-phi_bin_star * Ds)
-            likelihood_phi_bin <- dmvnorm(a, mean = rep(0, n), sigma = Ks_bin_star, log = T) - dmvnorm(a, mean = rep(0, n), sigma = Ks_bin, log = T)
-            prior_phi_bin <- stats::dgamma(x = phi_bin_star, shape = a_phi, rate = b_phi, log = T) - stats::dgamma(x = l1s, shape = a_phi, rate = b_phi, log = T)
+            likelihood_phi_bin <- dmvnorm(a, mean = rep(0, n), sigma = Ks_bin_star, log = TRUE) - dmvnorm(a, mean = rep(0, n), sigma = Ks_bin, log = TRUE)
+            prior_phi_bin <- stats::dgamma(x = phi_bin_star, shape = a_phi, rate = b_phi, log = TRUE) - stats::dgamma(x = l1s, shape = a_phi, rate = b_phi, log = TRUE)
             posterior_phi_bin <- likelihood_phi_bin + prior_phi_bin # prior ratio may get too large and dominate
 
             if (!is.na(posterior_phi_bin)) {
@@ -333,10 +358,10 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
 
         if ((l2t_star < 5) && (l2t_star > 0)) {
             Kt_nb_star <- sigma2t^2 * exp(-Dt / (l2t_star^2))
-            likelihood_l2t <- dmvnorm(d, mean = rep(0, n_time_points), sigma = Kt_nb_star, log = T) -
-                dmvnorm(d, mean = rep(0, n_time_points), sigma = Kt_nb, log = T)
-            prior_l2t <- stats::dgamma(x = l2t_star, shape = a_lt, rate = b_lt, log = T) -
-                stats::dgamma(x = l2t, shape = a_lt, rate = b_lt, log = T)
+            likelihood_l2t <- dmvnorm(d, mean = rep(0, n_time_points), sigma = Kt_nb_star, log = TRUE) -
+                dmvnorm(d, mean = rep(0, n_time_points), sigma = Kt_nb, log = TRUE)
+            prior_l2t <- stats::dgamma(x = l2t_star, shape = a_lt, rate = b_lt, log = TRUE) -
+                stats::dgamma(x = l2t, shape = a_lt, rate = b_lt, log = TRUE)
             posterior_l2t <- likelihood_l2t + prior_l2t # prior ratio may get too large and dominate
 
             if (!is.na(posterior_l2t)) {
@@ -358,10 +383,10 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         l2s_star <- stats::rnorm(1, l2s, 1)
         if ((l2s_star < 16) && (l2s_star > 0)) {
             Ks_nb_star <- sigma2s^2 * exp(-l2s_star * Ds)
-            likelihood_phi_nb <- dmvnorm(c, mean = rep(0, n), sigma = Ks_nb_star, log = T) -
-                dmvnorm(c, mean = rep(0, n), sigma = Ks_nb, log = T)
-            prior_phi_nb <- stats::dgamma(x = l2s_star, shape = a_phi, rate = b_phi, log = T) -
-                stats::dgamma(x = l2s, shape = a_phi, rate = b_phi, log = T)
+            likelihood_phi_nb <- dmvnorm(c, mean = rep(0, n), sigma = Ks_nb_star, log = TRUE) -
+                dmvnorm(c, mean = rep(0, n), sigma = Ks_nb, log = TRUE)
+            prior_phi_nb <- stats::dgamma(x = l2s_star, shape = a_phi, rate = b_phi, log = TRUE) -
+                stats::dgamma(x = l2s, shape = a_phi, rate = b_phi, log = TRUE)
             posterior_l2s <- likelihood_phi_nb + prior_phi_nb
             if (!is.na(posterior_l2s)) {
                 if (log(stats::runif(1)) < posterior_l2s) {
@@ -414,7 +439,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
             y_pred <- estimate(X, alpha, beta, Vs, Vt, a, b, c, d, eps1s, eps1t, eps2s, eps2t, r) # ?
         }
         # Store
-        if (i > burn & i %% thin == 0) {
+        if ((i > burn) && (i %% thin == 0)) {
             j <- (i - burn) / thin
             Alpha[j, ] <- alpha
             Beta[j, ] <- beta # fixed effects
@@ -454,7 +479,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         Phi_bin = Phi_bin, Sigma1s = Sigma1s, Phi_nb = Phi_nb, Sigma2s = Sigma2s,
         Sigma_eps1s = Sigma_eps1s, Sigma_eps2s = Sigma_eps2s,
         Sigma_eps1t = Sigma_eps1t, Sigma_eps2t = Sigma_eps2t,
-        R = R, R2 = R2, NIS1 = NIS1
+        R = R, R2 = R2
     )
     if (save_ypred) {
         temp <- list(Y_pred = Y_pred)
