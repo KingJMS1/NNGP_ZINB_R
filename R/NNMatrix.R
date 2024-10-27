@@ -1,5 +1,3 @@
-library(spNNGP) # Build neighbor index
-
 #### distance matrix for location i and its neighbors ####
 i_dist <- function(i, neighbor_index, s) {
     dist(s[c(i, neighbor_index[[i - 1]]), ])
@@ -46,7 +44,7 @@ get_NN_ind <- function(ind, ind_distM_i, M) {
 NNMatrix <- function(coords, n.neighbors, n.omp.threads = 2,
                      search.type = "brute") {
     N <- nrow(coords)
-    m.c <- spConjNNGP(rep(0, N) ~ 1,
+    m.c <- spNNGP::spConjNNGP(rep(0, N) ~ 1,
         coords = coords, n.neighbors = n.neighbors,
         theta.alpha = c("phi" = 5, "alpha" = 0.5),
         k.fold = NA, n.omp.threads = n.omp.threads,
@@ -54,7 +52,6 @@ NNMatrix <- function(coords, n.neighbors, n.omp.threads = 2,
         sigma.sq.IG = c(2, 1), cov.model = "exponential",
         verbose = F
     )
-    M <- n.neighbors
     NN_ind <- t(sapply(1:(N - 1), get_NN_ind, m.c$neighbor.info$n.indx[-1], n.neighbors))
     ord <- m.c$neighbor.info$ord
     coords.ord <- coords[ord, ]

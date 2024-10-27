@@ -39,7 +39,7 @@ make_spatial_effects <- function(phi_nb, phi_bin, sigma_bin_s, sigma_nb_s, coord
     a <- t(rmvnorm(n = 1, sigma = Ks_bin))
     c <- t(rmvnorm(n = 1, sigma = Ks_nb))
 
-    return(list(a = a, c = c))
+    return(list(a = a, c = c, Ds = Ds))
 }
 
 make_temporal_effects <- function(l1t, l2t, sigma1t, sigma2t, n_time_points) {
@@ -55,7 +55,7 @@ make_temporal_effects <- function(l1t, l2t, sigma1t, sigma2t, n_time_points) {
     b <- t(rmvnorm(n = 1, sigma = Kt_bin))
     d <- t(rmvnorm(n = 1, sigma = Kt_nb))
     
-    return(list(b = b, d = d))
+    return(list(b = b, d = d, Dt = Dt))
 }
 
 #################
@@ -75,6 +75,24 @@ x <- rnorm(N, 0, 1)
 X <- cbind(1, x) # Design matrix, can add additional covariates (e.g., race, age, gender)
 p <- ncol(X)
 
+
+phi_nb <- 1
+phi_bin <- 2
+sigma_bin_s <- 1
+sigma_nb_s <- 1
+out <- make_spatial_effects(phi_nb, phi_bin, sigma_bin_s, sigma_nb_s, coords)
+a <- out$a
+c <- out$c
+Ds <- out$Ds
+
+l1t <- 2
+l2t <- 3
+sigma1t <- 0.5
+sigma2t <- 0.5
+out <- make_temporal_effects(l1t, l2t, sigma1t, sigma2t, num_temporal)
+b <- out$b
+d <- out$d
+Dt <- out$Dt
 
 #################
 # Fixed Effects #
@@ -124,7 +142,7 @@ y[u == 1] <- rnbinom(N1, r, mu = mu[, 1]) # If at risk, draw from NB
 #################
 # Run the Model #
 #################
-output <- ZINB_NNGP(X, y, coords, Vs, Vt, Ds, Dt, M = 10, 2000, 500, 1, TRUE)
+output <- ZINB_NNGP(X, y, coords, Vs, Vt, Ds, Dt, M = 10, 200, 50, 1, TRUE)
 predictions <- output$Y_pred
 alpha <- output$Alpha
 beta <- output$Beta

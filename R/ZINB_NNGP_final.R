@@ -1,17 +1,3 @@
-library(BayesLogit) # For rpg function
-library(mvtnorm)
-library(MCMCpack) # For Iwish update of Sigmab
-library(msm) # For tnorm function
-library(spam) # For sparse Matrix
-library(Matrix) # For block matrix
-library(MASS)
-library(spNNGP)
-library(LaplacesDemon)
-
-source("NNMatrix.R")
-source("estimation.R")
-source("NNGP_getAD_collapse.R")
-
 #' Run the ZINB NNGP model described in https://doi.org/10.1016/j.jspi.2023.106098.
 #'
 #' @param X Other Predictor variables
@@ -33,6 +19,11 @@ source("NNGP_getAD_collapse.R")
 #' Phi_bin, Sigma1s, Phi_nb, Sigma2s, \cr
 #' Sigma_eps1s, Sigma_eps2s, Sigma_eps1t, Sigma_eps2t, \cr
 #' R, R2, Y_pred if save_YPRED = TRUE
+#' @export
+#' @importFrom MASS glm.nb
+#' @importFrom mvtnorm rmvnorm
+#' @importFrom mvtnorm dmvnorm
+#' @importFrom BayesLogit rpg
 ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1, save_ypred = FALSE) {
     # TODO: Break down the Gibbs sampling and test all steps independently
     # TODO: Remove the need to compute Ds, Dt manually, take in coords for both instead so you can NNGP with large datasets
@@ -229,9 +220,9 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         N1 <- sum(y1)
 
         # Update r
-        rnew <- rtnorm(1, r, sqrt(s), lower = 0) # Treat r as continuous
+        rnew <- msm::rtnorm(1, r, sqrt(s), lower = 0) # Treat r as continuous
         ratio <- sum(dnbinom(y[y1 == 1], rnew, q[y1 == 1], log = TRUE)) - sum(dnbinom(y[y1 == 1], r, q[y1 == 1], log = TRUE)) +
-            dtnorm(r, rnew, sqrt(s), 0, log = TRUE) - dtnorm(rnew, r, sqrt(s), 0, log = TRUE) # Uniform Prior for R
+            msm::dtnorm(r, rnew, sqrt(s), 0, log = TRUE) - msm::dtnorm(rnew, r, sqrt(s), 0, log = TRUE) # Uniform Prior for R
         # Proposal not symmetric
         if (log(runif(1)) < ratio) {
             r <- rnew
@@ -303,7 +294,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         ind_x <- c(c(rep(2:M, times = 1:(M - 1)), rep(((M + 1):n), each = M)), 1:n)
         ind_y <- c(c(t(NN.matrix$NN_ind))[which(c(t(NN.matrix$NN_ind)) > 0)], 1:n)
         DIA <-
-            as.matrix(sparseMatrix(
+            as.matrix(Matrix::sparseMatrix(
                 i = ind_x, j = (ind_y),
                 x = c(-na.omit(as.vector(AD[-(M + 1), ])), rep(1, n))
             ) / sqrt(Dm))
@@ -409,7 +400,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         ind_x <- c(c(rep(2:M, times = 1:(M - 1)), rep(((M + 1):n), each = M)), 1:n)
         ind_y <- c(c(t(NN.matrix$NN_ind))[which(c(t(NN.matrix$NN_ind)) > 0)], 1:n)
         DIA <-
-            as.matrix(sparseMatrix(
+            as.matrix(Matrix::sparseMatrix(
                 i = ind_x, j = (ind_y),
                 x = c(-na.omit(as.vector(AD[-(M + 1), ])), rep(1, n))
             ) / sqrt(Dm))
@@ -469,7 +460,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
                 Y_pred[j, ] <- y_pred
             }
         }
-        if (i %% 1 == 0) print(i)
+        if (i %% 100 == 0) print(i)
     }
     # Put the results into a list
     results <- list(
