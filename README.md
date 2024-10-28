@@ -6,10 +6,13 @@ Binomial Regression Models For Spatiotemporal Data" by Qing He and Hsin-Hsiung H
 This package is a work in progress, feel free to create an issue if you have suggestions or notice any problems.
 
 ## Installation Instructions
-
+Install the devtools R package, then run the following command
+```r
+devtools::install_github("KingJMS1/NNGP_ZINB_R")
+```
 
 ## Example Use
-Detailed examples with full code can be found in the examples folder. For basic usage, the model needs the following:
+Detailed examples with full code can be found in the examples folder. Particularly useful is the examples/example_usage_nice.html file, which is a rendered RMD. For basic usage, the model needs the following:
 
 ```
 X       Other Predictor variables
