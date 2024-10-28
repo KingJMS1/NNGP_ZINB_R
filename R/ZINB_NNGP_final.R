@@ -24,6 +24,15 @@
 #' @importFrom mvtnorm rmvnorm
 #' @importFrom mvtnorm dmvnorm
 #' @importFrom BayesLogit rpg
+#' @importFrom FastGP rcppeigen_invert_matrix
+#' @importFrom Matrix bdiag
+#' @importFrom Matrix sparseMatrix
+#' @importFrom msm rtnorm
+#' @importFrom msm dtnorm
+#' @importFrom stats dgamma
+#' @importFrom stats rnorm
+#' @importFrom LaplacesDemon rinvgamma
+#' @importFrom stats runif
 ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1, save_ypred = FALSE) {
     # TODO: Break down the Gibbs sampling and test all steps independently
     # TODO: Remove the need to compute Ds, Dt manually, take in coords for both instead so you can NNGP with large datasets
@@ -176,16 +185,16 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         Ks_nb <- sigma2s^2 * exp(-l2s * Ds)
         Kt_bin <- sigma1t^2 * exp(-Dt / (l1t^2))
         Kt_nb <- sigma2t^2 * exp(-Dt / (l2t^2)) # TODO: Recomputation of above variables here seems unnecessary
-        Sigma0_bin.inv <- as.matrix(Matrix::bdiag(
-            FastGP::rcppeigen_invert_matrix(Ks_bin),
-            FastGP::rcppeigen_invert_matrix(Kt_bin)
+        Sigma0_bin.inv <- as.matrix(bdiag(
+            rcppeigen_invert_matrix(Ks_bin),
+            rcppeigen_invert_matrix(Kt_bin)
         ))
-        Sigma0_nb.inv <- as.matrix(Matrix::bdiag(
-            FastGP::rcppeigen_invert_matrix(Ks_nb),
-            FastGP::rcppeigen_invert_matrix(Kt_nb)
+        Sigma0_nb.inv <- as.matrix(bdiag(
+            rcppeigen_invert_matrix(Ks_nb),
+            rcppeigen_invert_matrix(Kt_nb)
         ))
-        T0_bin <- as.matrix(Matrix::bdiag(T0a, Sigma0_bin.inv))
-        T0_nb <- as.matrix(Matrix::bdiag(T0b, Sigma0_nb.inv))
+        T0_bin <- as.matrix(bdiag(T0a, Sigma0_bin.inv))
+        T0_nb <- as.matrix(bdiag(T0b, Sigma0_nb.inv))
 
         # Update latent variable z
         mu <- X %*% alpha + Vs %*% a + Vt %*% b + Vs %*% eps1s + Vt %*% eps1t
@@ -193,7 +202,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         z <- (y1 - 1 / 2) / w
 
         # Update alpha, a, b
-        v <- FastGP::rcppeigen_invert_matrix(crossprod(sqrt(w) * XV) + T0_bin)
+        v <- rcppeigen_invert_matrix(crossprod(sqrt(w) * XV) + T0_bin)
         m <- v %*% (t(sqrt(w) * XV) %*% (sqrt(w) * (z - Vs %*% eps1s - Vt %*% eps1t)))
         alphaab <- c(rmvnorm(1, m[, 1], v))
         alpha <- alphaab[1:p]
@@ -220,9 +229,9 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         N1 <- sum(y1)
 
         # Update r
-        rnew <- msm::rtnorm(1, r, sqrt(s), lower = 0) # Treat r as continuous
+        rnew <- rtnorm(1, r, sqrt(s), lower = 0) # Treat r as continuous
         ratio <- sum(dnbinom(y[y1 == 1], rnew, q[y1 == 1], log = TRUE)) - sum(dnbinom(y[y1 == 1], r, q[y1 == 1], log = TRUE)) +
-            msm::dtnorm(r, rnew, sqrt(s), 0, log = TRUE) - msm::dtnorm(rnew, r, sqrt(s), 0, log = TRUE) # Uniform Prior for R
+            dtnorm(r, rnew, sqrt(s), 0, log = TRUE) - dtnorm(rnew, r, sqrt(s), 0, log = TRUE) # Uniform Prior for R
         # Proposal not symmetric
         if (log(runif(1)) < ratio) {
             r <- rnew
@@ -239,17 +248,17 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         r2 <- rgamma(1, 0.01 + sum(l), 0.01 - sum(log(1 - psi)))
 
         # update l1t, sigma1t
-        l1t_star <- stats::rnorm(1, l1t, sd_l)
+        l1t_star <- rnorm(1, l1t, sd_l)
         if ((l1t_star < 5) && (l1t_star > 0)) {
             Kt_bin_star <- sigma1t^2 * exp(-Dt / (l1t_star^2))
             likelihood_l1t <- dmvnorm(b, mean = rep(0, n_time_points), sigma = Kt_bin_star, log = TRUE) -
                 dmvnorm(b, mean = rep(0, n_time_points), sigma = Kt_bin, log = TRUE)
-            prior_l1t <- stats::dgamma(x = l1t_star, shape = a_lt, rate = b_lt, log = TRUE) -
-                stats::dgamma(x = l1t, shape = a_lt, rate = b_lt, log = TRUE)
+            prior_l1t <- dgamma(x = l1t_star, shape = a_lt, rate = b_lt, log = TRUE) -
+                dgamma(x = l1t, shape = a_lt, rate = b_lt, log = TRUE)
             posterior_l1t <- likelihood_l1t + prior_l1t # prior ratio may get too large and dominate
 
             if (!is.na(posterior_l1t)) {
-                if (log(stats::runif(1)) < posterior_l1t) {
+                if (log(runif(1)) < posterior_l1t) {
                     l1t <- l1t_star
                     Kt_bin <- Kt_bin_star
                 }
@@ -257,23 +266,23 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         }
 
         ## posterior dist
-        K_inv <- FastGP::rcppeigen_invert_matrix(Kt_bin + diag(exp(-10), nrow = n_time_points))
+        K_inv <- rcppeigen_invert_matrix(Kt_bin + diag(exp(-10), nrow = n_time_points))
         a_new <- a_sigmat + 0.5 * n_time_points
         b_new <- b_sigmat + 0.5 * (t(b) %*% K_inv %*% b)
-        sigma1t.sq <- LaplacesDemon::rinvgamma(n = 1, shape = a_new, scale = b_new)
+        sigma1t.sq <- rinvgamma(n = 1, shape = a_new, scale = b_new)
         sigma1t <- sqrt(sigma1t.sq)
 
         # update phi_bin using M-H
-        phi_bin_star <- stats::rnorm(1, l1s, 2) # proposal dist
+        phi_bin_star <- rnorm(1, l1s, 2) # proposal dist
 
         if ((phi_bin_star < 16) && (phi_bin_star > 0)) {
             Ks_bin_star <- sigma1s^2 * exp(-phi_bin_star * Ds)
             likelihood_phi_bin <- dmvnorm(a, mean = rep(0, n), sigma = Ks_bin_star, log = TRUE) - dmvnorm(a, mean = rep(0, n), sigma = Ks_bin, log = TRUE)
-            prior_phi_bin <- stats::dgamma(x = phi_bin_star, shape = a_phi, rate = b_phi, log = TRUE) - stats::dgamma(x = l1s, shape = a_phi, rate = b_phi, log = TRUE)
+            prior_phi_bin <- dgamma(x = phi_bin_star, shape = a_phi, rate = b_phi, log = TRUE) - dgamma(x = l1s, shape = a_phi, rate = b_phi, log = TRUE)
             posterior_phi_bin <- likelihood_phi_bin + prior_phi_bin # prior ratio may get too large and dominate
 
             if (!is.na(posterior_phi_bin)) {
-                if (log(stats::runif(1)) < posterior_phi_bin) {
+                if (log(runif(1)) < posterior_phi_bin) {
                     l1s <- phi_bin_star
                 }
             }
@@ -294,7 +303,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         ind_x <- c(c(rep(2:M, times = 1:(M - 1)), rep(((M + 1):n), each = M)), 1:n)
         ind_y <- c(c(t(NN.matrix$NN_ind))[which(c(t(NN.matrix$NN_ind)) > 0)], 1:n)
         DIA <-
-            as.matrix(Matrix::sparseMatrix(
+            as.matrix(sparseMatrix(
                 i = ind_x, j = (ind_y),
                 x = c(-na.omit(as.vector(AD[-(M + 1), ])), rep(1, n))
             ) / sqrt(Dm))
@@ -305,19 +314,19 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         ## posterior dist
         a_new <- a_sigmas + 0.5 * n
         b_new <- b_sigmas + 0.5 * (t(a) %*% K_inv %*% a)
-        sigma1s.sq <- LaplacesDemon::rinvgamma(n = 1, shape = a_new, scale = b_new)
+        sigma1s.sq <- rinvgamma(n = 1, shape = a_new, scale = b_new)
         sigma1s <- sqrt(sigma1s.sq)
 
         # Update sigma_eps1s
         a_eps1s_new <- a_eps1s + 0.5 * n
         b_eps1s_new <- b_eps1s + 0.5 * sum(eps1s^2)
-        sigma_eps1s.sq <- LaplacesDemon::rinvgamma(n = 1, shape = a_eps1s_new, scale = b_eps1s_new)
+        sigma_eps1s.sq <- rinvgamma(n = 1, shape = a_eps1s_new, scale = b_eps1s_new)
         sigma_eps1s <- sqrt(sigma_eps1s.sq)
 
         # Update sigma_eps1t
         a_eps1t_new <- a_eps1t + 0.5 * n_time_points
         b_eps1t_new <- b_eps1t + 0.5 * sum(eps1t^2)
-        sigma_eps1t.sq <- LaplacesDemon::rinvgamma(n = 1, shape = a_eps1t_new, scale = b_eps1t_new)
+        sigma_eps1t.sq <- rinvgamma(n = 1, shape = a_eps1t_new, scale = b_eps1t_new)
         sigma_eps1t <- sqrt(sigma_eps1t.sq)
 
         # Update beta
@@ -326,7 +335,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         z <- (y[y1 == 1] - r) / (2 * w)
 
         # Update beta, c, d
-        v <- FastGP::rcppeigen_invert_matrix(crossprod(sqrt(w) * XV[y1 == 1, ]) + T0_nb)
+        v <- rcppeigen_invert_matrix(crossprod(sqrt(w) * XV[y1 == 1, ]) + T0_nb)
         m <- v %*% (t(sqrt(w) * XV[y1 == 1, ]) %*% (sqrt(w) * (z - Vs[y1 == 1, ] %*% eps2s - Vt[y1 == 1, ] %*% eps2t)))
         betacd <- c(rmvnorm(1, m[, 1], v))
         beta <- betacd[1:p]
@@ -335,7 +344,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
 
         # update eps2s
         v <- solve(crossprod(sqrt(w) * Vs[y1 == 1, ]) + 1 / (sigma_eps2s^2) * diag(n))
-        # v<-FastGP::rcppeigen_invert_matrix(crossprod(sqrt(w)*Vs[y1==1,])+Sigma0e_nb.inv)
+        # v<-rcppeigen_invert_matrix(crossprod(sqrt(w)*Vs[y1==1,])+Sigma0e_nb.inv)
         m <- v %*% (t(sqrt(w) * Vs[y1 == 1, ]) %*% (sqrt(w) * (z - X[y1 == 1, ] %*% beta - Vs[y1 == 1, ] %*% c - Vt[y1 == 1, ] %*% d - Vt[y1 == 1, ] %*% eps2t)))
         eps2s <- c(rmvnorm(1, m[, 1], v))
 
@@ -345,18 +354,18 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         eps2t <- c(rmvnorm(1, m[, 1], v))
 
         # update l2t, sigma2t
-        l2t_star <- stats::rnorm(1, l2t, sd_l)
+        l2t_star <- rnorm(1, l2t, sd_l)
 
         if ((l2t_star < 5) && (l2t_star > 0)) {
             Kt_nb_star <- sigma2t^2 * exp(-Dt / (l2t_star^2))
             likelihood_l2t <- dmvnorm(d, mean = rep(0, n_time_points), sigma = Kt_nb_star, log = TRUE) -
                 dmvnorm(d, mean = rep(0, n_time_points), sigma = Kt_nb, log = TRUE)
-            prior_l2t <- stats::dgamma(x = l2t_star, shape = a_lt, rate = b_lt, log = TRUE) -
-                stats::dgamma(x = l2t, shape = a_lt, rate = b_lt, log = TRUE)
+            prior_l2t <- dgamma(x = l2t_star, shape = a_lt, rate = b_lt, log = TRUE) -
+                dgamma(x = l2t, shape = a_lt, rate = b_lt, log = TRUE)
             posterior_l2t <- likelihood_l2t + prior_l2t # prior ratio may get too large and dominate
 
             if (!is.na(posterior_l2t)) {
-                if (log(stats::runif(1)) < posterior_l2t) {
+                if (log(runif(1)) < posterior_l2t) {
                     l2t <- l2t_star
                     Kt_nb <- Kt_nb_star
                 }
@@ -364,23 +373,23 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         }
 
         ## posterior dist
-        K_inv <- FastGP::rcppeigen_invert_matrix(Kt_nb + diag(exp(-10), nrow = n_time_points))
+        K_inv <- rcppeigen_invert_matrix(Kt_nb + diag(exp(-10), nrow = n_time_points))
         a_new <- a_sigmat + 0.5 * n_time_points
         b_new <- b_sigmat + 0.5 * (t(d) %*% K_inv %*% d)
-        sigma2t.sq <- LaplacesDemon::rinvgamma(n = 1, shape = a_new, scale = b_new)
+        sigma2t.sq <- rinvgamma(n = 1, shape = a_new, scale = b_new)
         sigma2t <- sqrt(sigma2t.sq)
 
         # update l2s using M-H
-        l2s_star <- stats::rnorm(1, l2s, 1)
+        l2s_star <- rnorm(1, l2s, 1)
         if ((l2s_star < 16) && (l2s_star > 0)) {
             Ks_nb_star <- sigma2s^2 * exp(-l2s_star * Ds)
             likelihood_phi_nb <- dmvnorm(c, mean = rep(0, n), sigma = Ks_nb_star, log = TRUE) -
                 dmvnorm(c, mean = rep(0, n), sigma = Ks_nb, log = TRUE)
-            prior_phi_nb <- stats::dgamma(x = l2s_star, shape = a_phi, rate = b_phi, log = TRUE) -
-                stats::dgamma(x = l2s, shape = a_phi, rate = b_phi, log = TRUE)
+            prior_phi_nb <- dgamma(x = l2s_star, shape = a_phi, rate = b_phi, log = TRUE) -
+                dgamma(x = l2s, shape = a_phi, rate = b_phi, log = TRUE)
             posterior_l2s <- likelihood_phi_nb + prior_phi_nb
             if (!is.na(posterior_l2s)) {
-                if (log(stats::runif(1)) < posterior_l2s) {
+                if (log(runif(1)) < posterior_l2s) {
                     l2s <- l2s_star
                 }
             }
@@ -400,7 +409,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         ind_x <- c(c(rep(2:M, times = 1:(M - 1)), rep(((M + 1):n), each = M)), 1:n)
         ind_y <- c(c(t(NN.matrix$NN_ind))[which(c(t(NN.matrix$NN_ind)) > 0)], 1:n)
         DIA <-
-            as.matrix(Matrix::sparseMatrix(
+            as.matrix(sparseMatrix(
                 i = ind_x, j = (ind_y),
                 x = c(-na.omit(as.vector(AD[-(M + 1), ])), rep(1, n))
             ) / sqrt(Dm))
@@ -411,19 +420,19 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         ## posterior dist
         a_new <- a_sigmas + 0.5 * n
         b_new <- b_sigmas + 0.5 * (t(c) %*% K_inv %*% c)
-        sigma2s.sq <- LaplacesDemon::rinvgamma(n = 1, shape = a_new, scale = b_new)
+        sigma2s.sq <- rinvgamma(n = 1, shape = a_new, scale = b_new)
         sigma2s <- sqrt(sigma2s.sq)
 
         # Update sigma_eps2s
         a_eps2s_new <- a_eps2s + 0.5 * n
         b_eps2s_new <- b_eps2s + 0.5 * sum(eps2s^2)
-        sigma_eps2s.sq <- LaplacesDemon::rinvgamma(n = 1, shape = a_eps2s_new, scale = b_eps2s_new)
+        sigma_eps2s.sq <- rinvgamma(n = 1, shape = a_eps2s_new, scale = b_eps2s_new)
         sigma_eps2s <- sqrt(sigma_eps2s.sq)
 
         # Update sigma_eps2t
         a_eps2t_new <- a_eps2t + 0.5 * n_time_points
         b_eps2t_new <- b_eps2t + 0.5 * sum(eps2t^2)
-        sigma_eps2t.sq <- LaplacesDemon::rinvgamma(n = 1, shape = a_eps2t_new, scale = b_eps2t_new)
+        sigma_eps2t.sq <- rinvgamma(n = 1, shape = a_eps2t_new, scale = b_eps2t_new)
         sigma_eps2t <- sqrt(sigma_eps2t.sq)
 
         if (save_ypred) {

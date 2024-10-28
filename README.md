@@ -5,5 +5,8 @@ Binomial Regression Models For Spatiotemporal Data" by Qing He and Hsin-Hsiung H
 
 This package is a work in progress, feel free to create an issue if you have suggestions or notice any problems.
 
+## Dependencies
+FastGP, Matrix, msm, LaplacesDemon, spNNGP
+
 ## Example Use with Simulated Data
 A more detailed example with complete code can be found in the example_usage.R file.

@@ -41,10 +41,12 @@ get_NN_ind <- function(ind, ind_distM_i, M) {
     return(D_i)
 }
 
+#' Create neighbord matrix with spNNGP
+#' @importFrom spNNGP spConjNNGP
 NNMatrix <- function(coords, n.neighbors, n.omp.threads = 2,
                      search.type = "brute") {
     N <- nrow(coords)
-    m.c <- spNNGP::spConjNNGP(rep(0, N) ~ 1,
+    m.c <- spConjNNGP(rep(0, N) ~ 1,
         coords = coords, n.neighbors = n.neighbors,
         theta.alpha = c("phi" = 5, "alpha" = 0.5),
         k.fold = NA, n.omp.threads = n.omp.threads,
