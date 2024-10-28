@@ -8,6 +8,7 @@ This package is a work in progress, feel free to create an issue if you have sug
 ## Installation Instructions
 Install the devtools R package, then run the following command
 ```r
+install.packages(c("BayesLogit", "FastGP", "LaplacesDemon", "MASS", "Matrix", "msm", "mvtnorm", "spNNGP"))
 devtools::install_github("KingJMS1/NNGP_ZINB_R")
 ```
 
