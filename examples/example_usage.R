@@ -2,6 +2,8 @@ library(mvtnorm)
 library(Matrix)
 library(ZINB.GP)
 
+# This file can be run via `Rscript example_usage.R`
+
 # Generate a number of samples at a number of spatial locations, return design matrices and total number of observations, avg_obs describes how many observations there area at each spatiotemporal point
 make_Vs_Vt <- function(num_spatial, num_temporal, avg_obs) {
     n_time_points <- num_temporal # Number of temporal units
@@ -61,8 +63,8 @@ make_temporal_effects <- function(l1t, l2t, sigma1t, sigma2t, n_time_points) {
 #################
 # Generate Data #
 #################
-num_spatial <- 200
-num_temporal <- 20
+num_spatial <- 30
+num_temporal <- 10
 
 # Get Spatial and temporal design matrices, and total number of observations
 out <- make_Vs_Vt(num_spatial, num_temporal, 2)
@@ -142,7 +144,24 @@ y[u == 1] <- rnbinom(N1, r, mu = mu[, 1]) # If at risk, draw from NB
 #################
 # Run the Model #
 #################
-output <- ZINB_NNGP(X, y, coords, Vs, Vt, Ds, Dt, M = 10, 200, 50, 1, TRUE)
+# Run for a short time for demo purposes
+cat("Running Model\n")
+output <- ZINB_NNGP(X, y, coords, Vs, Vt, Ds, Dt, M = 10, 500, 100, 1, TRUE)
 predictions <- output$Y_pred
-alpha <- output$Alpha
-beta <- output$Beta
+sim_alpha <- output$Alpha
+sim_beta <- output$Beta
+
+# Examine coefficients for regressions
+cat("\nLogistic Regression Coefficients:\n")
+alpha
+apply(sim_alpha, 2, function(x) quantile(x, probs=c(0.05, 0.95)))
+
+cat("\nNegative Binomial Coefficients:\n")
+beta
+apply(sim_beta, 2, function(x) quantile(x, probs=c(0.05, 0.95)))
+
+# Examine how often various samples are at risk
+cat("\nAt risk 'probabilities':\n")
+at_risk <- output$at_risk
+sim_p_at_risk <- apply(at_risk, 2, mean)
+sim_p_at_risk[1:20]

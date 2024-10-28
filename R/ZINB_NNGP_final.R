@@ -12,13 +12,16 @@
 #' @param burn How long to run MCMC before saving samples.
 #' @param thin How often to save MCMC samples, default is 1, saves every iteration.
 #' @param save_ypred Whether or not to output the predicted values at every iteration
-#' @return A List of the following sampled values: \cr         
-#' Alpha, Beta, A, B, C, D, \cr
-#' Eps1s, Eps2s, Eps1t, Eps2t, \cr
-#' L1t, Sigma1t, L2t, Sigma2t, \cr
-#' Phi_bin, Sigma1s, Phi_nb, Sigma2s, \cr
-#' Sigma_eps1s, Sigma_eps2s, Sigma_eps1t, Sigma_eps2t, \cr
-#' R, R2, Y_pred if save_YPRED = TRUE
+#' @param print_iter How often to print the iteration number of the MCMC chain.
+#' @param print_progress Whether or not to print the iteration number of the MCMC chain.
+#' @return A List of the following sampled values:          
+#' Alpha, Beta, A, B, C, D, 
+#' Eps1s, Eps2s, Eps1t, Eps2t, 
+#' L1t, Sigma1t, L2t, Sigma2t, 
+#' Phi_bin, Sigma1s, Phi_nb, Sigma2s, 
+#' Sigma_eps1s, Sigma_eps2s, Sigma_eps1t, Sigma_eps2t, 
+#' R, R2, 
+#' at_risk, Y_pred if save_YPRED = TRUE
 #' @export
 #' @importFrom MASS glm.nb
 #' @importFrom mvtnorm rmvnorm
@@ -33,7 +36,7 @@
 #' @importFrom stats rnorm
 #' @importFrom LaplacesDemon rinvgamma
 #' @importFrom stats runif
-ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1, save_ypred = FALSE) {
+ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1, save_ypred = FALSE, print_iter = 100, print_progress = FALSE) {
     # TODO: Break down the Gibbs sampling and test all steps independently
     # TODO: Remove the need to compute Ds, Dt manually, take in coords for both instead so you can NNGP with large datasets
 
@@ -169,6 +172,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
     Sigma_eps2t <- rep(0, lastit)
     if (save_ypred == TRUE) {
         Y_pred <- matrix(NA, lastit, N)
+        y1s <- matrix(NA, lastit, N)
     }
 
 
@@ -467,9 +471,10 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
             R2[j] <- r2
             if (save_ypred == TRUE) {
                 Y_pred[j, ] <- y_pred
+                y1s[j, ] <- y1
             }
         }
-        if (i %% 100 == 0) print(i)
+        if ((i %% print_iter == 0) && (print_progress)) print(i)
     }
     # Put the results into a list
     results <- list(
@@ -482,7 +487,7 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         R = R, R2 = R2
     )
     if (save_ypred) {
-        temp <- list(Y_pred = Y_pred)
+        temp <- list(Y_pred = Y_pred, at_risk = y1s)
         results <- append(results, temp)
     }
     return(results)

@@ -16,7 +16,9 @@ ZINB_NNGP(
   nsim,
   burn,
   thin = 1,
-  save_ypred = FALSE
+  save_ypred = FALSE,
+  print_iter = 100,
+  print_progress = FALSE
 )
 }
 \arguments{
@@ -43,15 +45,20 @@ ZINB_NNGP(
 \item{thin}{How often to save MCMC samples, default is 1, saves every iteration.}
 
 \item{save_ypred}{Whether or not to output the predicted values at every iteration}
+
+\item{print_iter}{How often to print the iteration number of the MCMC chain.}
+
+\item{print_progress}{Whether or not to print the iteration number of the MCMC chain.}
 }
 \value{
-A List of the following sampled values: \cr
-Alpha, Beta, A, B, C, D, \cr
-Eps1s, Eps2s, Eps1t, Eps2t, \cr
-L1t, Sigma1t, L2t, Sigma2t, \cr
-Phi_bin, Sigma1s, Phi_nb, Sigma2s, \cr
-Sigma_eps1s, Sigma_eps2s, Sigma_eps1t, Sigma_eps2t, \cr
-R, R2, Y_pred if save_YPRED = TRUE
+A List of the following sampled values:
+Alpha, Beta, A, B, C, D,
+Eps1s, Eps2s, Eps1t, Eps2t,
+L1t, Sigma1t, L2t, Sigma2t,
+Phi_bin, Sigma1s, Phi_nb, Sigma2s,
+Sigma_eps1s, Sigma_eps2s, Sigma_eps1t, Sigma_eps2t,
+R, R2,
+at_risk, Y_pred if save_YPRED = TRUE
 }
 \description{
 Run the ZINB NNGP model described in https://doi.org/10.1016/j.jspi.2023.106098.
