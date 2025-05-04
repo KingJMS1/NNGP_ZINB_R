@@ -14,41 +14,23 @@ getAD <- function(neardist, neardistM, N, M, phi) {
             M
         }
 
-        # distance among the neighbors
-        temp_neardistM <- matrix(NA, nrow = count_NN, ncol = count_NN)
-        u <- rep(NA, count_NN)
-
-        if (count_NN == 1) {
-            temp_neardistM[1, 1] <- 1
-        } else {
-            h <- 0
-            for (j in 1:(count_NN - 1)) {
-                for (k in (j + 1):count_NN) {
-                    h <- h + 1
-                    temp_neardistM[j, k] <- exp(-phi * neardistM[(i - 1), h])
-                    temp_neardistM[k, j] <- temp_neardistM[j, k]
-                }
-            }
-            for (j in 1:count_NN) {
-                temp_neardistM[j, j] <- 1
-            }
-        }
-
+        temp_neardistM <- diag(count_NN)
+        if (count_NN > 1)
+        {
+            temp_neardistM[lower.tri(temp_neardistM, diag = FALSE)] <- exp(-phi * neardistM[i-1, 1:((count_NN * (count_NN - 1)) %/% 2)])
+            temp_neardistM <- matrix(unlist(temp_neardistM), nrow=count_NN, ncol=count_NN)
+            temp_neardistM <- t(temp_neardistM) + temp_neardistM - diag(diag(temp_neardistM))
+        }        
+        
         L <- chol(temp_neardistM) # m by m when i > m+1
 
-        for (j in 1:count_NN) {
-            u[j] <- exp(-phi * neardist[(i - 1), j])
-        }
+        u = exp(-phi * unlist(neardist[(i - 1), 1:count_NN]))
 
-        v <- solve(t(L)) %*% u
-        # print(dim(v))
+        v <- solve(t(L), u)
         AD[(M + 1), i] <- (1.0 - (t(v) %*% v))
 
-        v2 <- solve(L) %*% v
-        for (j in 1:count_NN) {
-            AD[j, i] <- v2[j]
-        }
-        # A[row.indx, col.indx] = solve(L) %*% v # a vector
+        v2 <- solve(L, v)
+        AD[1:count_NN, i] = v2
     }
     AD[(M + 1), 1] <- 1
     return(AD)

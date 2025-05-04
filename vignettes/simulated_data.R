@@ -73,6 +73,7 @@ N  <- out$N
 coords <- cbind(runif(num_spatial), runif(num_spatial))
 x <- rnorm(N, 0, 1)
 X <- as.matrix(x) # Design matrix, can add additional covariates (e.g., race, age, gender)
+X <- cbind(1, X)
 p <- ncol(X)
 
 
