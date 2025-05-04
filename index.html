@@ -32,6 +32,12 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="articles/simulated_data.html">A Simple Simulation</a></li>
+  </ul>
+</li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -60,7 +66,7 @@
 <div class="section level2">
 <h2 id="example-use">Example Use<a class="anchor" aria-label="anchor" href="#example-use"></a>
 </h2>
-<p>Detailed examples with full code can be found in the examples folder. Particularly useful is the examples/example_usage_nice.html file, which is a rendered RMD. For basic usage, the model needs the following:</p>
+<p>Detailed examples with full code can be found in the vignettes folder, or at the following link: <a href="https://kingjms1.github.io/NNGP_ZINB_R/" class="uri">https://kingjms1.github.io/NNGP_ZINB_R/</a></p>
 <pre><code>X       Other Predictor variables
 y       Zero inflated count response
 coords  Spatial coordinates for NNGP
@@ -82,6 +88,11 @@ burn    How long to run MCMC before saving samples.</code></pre>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kingjms1.github.io/NNGP_ZINB_R/">ZINB.GP</a></span><span class="op">)</span></span>
 <span><span class="va">output</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ZINB_NNGP.html">ZINB_NNGP</a></span><span class="op">(</span><span class="va">X</span>, <span class="va">y</span>, <span class="va">coords</span>, <span class="va">Vs</span>, <span class="va">Vt</span>, <span class="va">Ds</span>, <span class="va">Dt</span>, M <span class="op">=</span> <span class="va">M</span>, <span class="va">nsim</span>, <span class="va">burn</span>, save_ypred <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">predictions</span> <span class="op">&lt;-</span> <span class="va">output</span><span class="op">$</span><span class="va">Y_pred</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="api-reference">API Reference<a class="anchor" aria-label="anchor" href="#api-reference"></a>
+</h2>
+<p>API reference: <a href="https://kingjms1.github.io/NNGP_ZINB_R/reference/index.html" class="uri">https://kingjms1.github.io/NNGP_ZINB_R/reference/index.html</a></p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="license">
