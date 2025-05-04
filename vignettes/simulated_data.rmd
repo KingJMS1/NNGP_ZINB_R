@@ -1,7 +1,23 @@
+---
+title: "A Simple Simulation"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{A Simple Simulation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
 # Using ZINB.GP's ZINB_NNGP model
 
 First, we import our package as well as some dependencies we will use to simulate the dataset.
-```{r}
+```{r setup}
 library(mvtnorm)
 library(Matrix)
 library(ZINB.GP)
@@ -92,6 +108,7 @@ Then, we will generate the spatial coordinates, and the main predictors of inter
 coords <- cbind(runif(num_spatial), runif(num_spatial))
 x <- rnorm(N, 0, 1)
 X <- as.matrix(x) # Design matrix, can add additional covariates (e.g., race, age, gender)
+X <- cbind(1, X)
 p <- ncol(X)
 ```
 
