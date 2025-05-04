@@ -36,6 +36,7 @@
 #' @importFrom stats rnorm
 #' @importFrom LaplacesDemon rinvgamma
 #' @importFrom stats runif
+#' @importFrom Matrix forceSymmetric
 ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1, save_ypred = FALSE, print_iter = 100, print_progress = FALSE) {
     # TODO: Break down the Gibbs sampling and test all steps independently
     # TODO: Remove the need to compute Ds, Dt manually, take in coords for both instead so you can NNGP with large datasets
@@ -190,12 +191,12 @@ ZINB_NNGP <- function(X, y, coords, Vs, Vt, Ds, Dt, M = 10, nsim, burn, thin = 1
         Kt_bin <- sigma1t^2 * exp(-Dt / (l1t^2))
         Kt_nb <- sigma2t^2 * exp(-Dt / (l2t^2)) # TODO: Recomputation of above variables here seems unnecessary
         Sigma0_bin.inv <- as.matrix(bdiag(
-            rcppeigen_invert_matrix(Ks_bin),
-            rcppeigen_invert_matrix(Kt_bin)
+            forceSymmetric(rcppeigen_invert_matrix(Ks_bin)),
+            forceSymmetric(rcppeigen_invert_matrix(Kt_bin))
         ))
         Sigma0_nb.inv <- as.matrix(bdiag(
-            rcppeigen_invert_matrix(Ks_nb),
-            rcppeigen_invert_matrix(Kt_nb)
+            forceSymmetric(rcppeigen_invert_matrix(Ks_nb)),
+            forceSymmetric(rcppeigen_invert_matrix(Kt_nb))
         ))
         T0_bin <- as.matrix(bdiag(T0a, Sigma0_bin.inv))
         T0_nb <- as.matrix(bdiag(T0b, Sigma0_nb.inv))

@@ -1,0 +1,94 @@
+# Using ZINB_NNGP on a real dataset
+
+```{r}
+library(mvtnorm)
+library(Matrix)
+library(reticulate)
+library(lubridate)
+library(sf)
+library(ZINB.GP)
+```
+
+
+## Dataset
+This time we will use some hurricane Ian damage data to show how to use the model on a sample real dataset. We start by loading some variables we are insterested in.
+
+```{r}
+responseData <- read.csv("examples/Ian/Ian Events Water.csv")
+
+event_type <- model.matrix(~as.factor(responseData$EVENT_TYPE))
+flood <- event_type[, 2]
+tornado <- event_type[, 3]
+
+
+startTime <- dmy_hms(responseData$BEGIN_DATE_TIME)
+endTime <- dmy_hms(responseData$END_DATE_TIME)
+
+# Make sure we don't accidentally have any identical times
+timestamp <- (((endTime - startTime) / 2) + startTime) + rnorm(length(startTime), 0, 1)
+
+time_distances <- as.matrix(dist(timestamp, diag = TRUE, upper = TRUE) / 100000)
+
+places <- st_as_sf(responseData, coords = c("BEGIN_LON", "BEGIN_LAT"), crs = 3857)$geometry
+coords <- cbind(responseData$BEGIN_LON, responseData$BEGIN_LAT)
+coords <- coords[2:nrow(coords), ]
+distances <- st_distance(places)
+
+# Use direct deaths and highest nearby storm surge measurement as predictors
+deaths <- responseData$DEATHS_DIRECT
+max_water <- responseData$MAX_WATER
+
+# Attempt to predict property damage
+y <- responseData$DAMAGE_PROPERTY
+
+Vs <- diag(length(y))[, 2:length(y)]
+Ds <- distances
+units(Ds) <- NULL
+Ds <- Ds[2:nrow(Ds), 2:ncol(Ds)]
+
+Vt <- diag(nrow(time_distances))[, 2:nrow(time_distances)]
+Dt <- time_distances
+Dt <- Dt[2:nrow(Dt), 2:ncol(Dt)]
+
+X <- cbind(deaths, max_water)
+X <- cbind(1, X)
+```
+
+## Running the model on the dataset
+Now we are ready to run the model. This is done as follows:
+```{r}
+nsim <- 200
+burn <- 100
+M <- 10
+thin <- 1
+
+# Run for a short time for demo purposes
+output <- ZINB_NNGP(X, y, coords, Vs, Vt, Ds, Dt, M, nsim, burn, thin, TRUE)
+predictions <- output$Y_pred
+sim_alpha <- output$Alpha
+sim_beta <- output$Beta
+```
+
+Then we can investigate the output as desired, as an example, we create 90% CIs for alpha and beta, and investigate how often some samples were selected to be at risk.
+
+Looking at 90% CIs for coefficients for the at-risk LR model:
+```{r}
+alpha
+aCIs <- apply(sim_alpha, 2, function(x) quantile(x, probs=c(0.05, 0.95)))
+boxplot(aCIs, main = "CIs for Alpha")
+```
+
+Looking at 90% CIs for coefficients for the NB model:
+```{r}
+beta
+bCIs <- apply(sim_beta, 2, function(x) quantile(x, probs=c(0.05, 0.95)))
+boxplot(bCIs, main = "CIs for Beta")
+```
+
+Viewing the frequency a few samples were at risk:
+```{r}
+# Examine how often various samples are at risk
+at_risk <- output$at_risk
+sim_p_at_risk <- apply(at_risk, 2, mean)
+sim_p_at_risk[1:20]
+```

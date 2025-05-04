@@ -30,11 +30,9 @@ make_Vs_Vt <- function(num_spatial, num_temporal, avg_obs) {
     }
 
     # spatial design matrix
-    # TODO: Think more about this setup, seems like one column of ones should be zeroed out
     Vs <- as.matrix(sparseMatrix(i = 1:N, j = id, x = rep(1, N)))
 
     # temporal design matrix
-    # TODO: Think more about this setup, seems like one column of ones should be zeroed out
     Vt <- as.matrix(sparseMatrix(i = 1:N, j = tp_seq, x = rep(1, N)))
 
     return(list(Vs = Vs, Vt = Vt, N = N))
@@ -93,7 +91,7 @@ Then, we will generate the spatial coordinates, and the main predictors of inter
 ```{r}
 coords <- cbind(runif(num_spatial), runif(num_spatial))
 x <- rnorm(N, 0, 1)
-X <- cbind(1, x) # Design matrix, can add additional covariates (e.g., race, age, gender)
+X <- as.matrix(x) # Design matrix, can add additional covariates (e.g., race, age, gender)
 p <- ncol(X)
 ```
 
