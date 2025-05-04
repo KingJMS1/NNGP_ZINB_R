@@ -1,5 +1,3 @@
-library(pracma)
-
 getAD <- function(neardist, neardistM, N, M, phi) {
     # coords: n by 2 array,
     # phi, v, alpha: covariance parameter set
