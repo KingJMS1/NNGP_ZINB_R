@@ -3,7 +3,7 @@ pkgdown: 2.1.2
 pkgdown_sha: ~
 articles:
   simulated_data: simulated_data.html
-last_built: 2025-05-04T19:13Z
+last_built: 2025-05-04T20:47Z
 urls:
   reference: https://kingjms1.github.io/NNGP_ZINB_R/reference
   article: https://kingjms1.github.io/NNGP_ZINB_R/articles
