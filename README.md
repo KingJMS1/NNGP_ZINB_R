@@ -13,7 +13,7 @@ devtools::install_github("KingJMS1/NNGP_ZINB_R")
 ```
 
 ## Example Use
-Detailed examples with full code can be found in the vignettes folder, or at the following link: https://kingjms1.github.io/NNGP_ZINB_R/
+Detailed examples with full code can be found in the vignettes folder, or at the following link under articles: https://kingjms1.github.io/NNGP_ZINB_R/
 
 ```
 X       Other Predictor variables
