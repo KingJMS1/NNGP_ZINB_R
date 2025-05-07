@@ -1,0 +1,206 @@
+---
+title: "Demonstration of ZINB_NNGP with Simulated Spatial-Temporal Data"
+author: "Hsin-Hsiung Huang and Mahlon Scott"
+date: "March 07, 2025"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Additional Example: ZINB_NNGP}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+This document demonstrates the use of the ZINB_NNGP function from the ZINB.GP package, which implements a Zero-Inflated Negative Binomial (ZINB) model with Nearest Neighbor Gaussian Processes (NNGP) for spatial-temporal data. The package is sourced from GitHub: KingJMS1/NNGP_ZINB_R. We will simulate spatial and temporal data, then apply the ZINB_NNGP function to model it.
+
+## Loading Required Libraries
+
+Load the necessary libraries for this demonstration.
+
+```{r}
+library(ZINB.GP)
+library(sp)
+library(mvtnorm)
+library(Matrix)
+library(fields)  # For spatial simulation and visualization
+set.seed(123)    # For reproducibility
+```
+
+## Simulating Spatial-Temporal Data
+
+We will simulate data with spatial and temporal components. Assume we have:
+  
+n_locs: Number of spatial locations
+n_times: Number of time points
+X: Covariate matrix
+y: Response variable (counts with excess zeros)
+coords: Spatial coordinates
+Vs, Vt: Spatial and temporal variance components
+Ds, Dt: Spatial and temporal distance matrices
+Step 1: Define Parameters
+t
+
+```{r}
+n_locs <- 10    # Number of spatial locations
+n_times <- 10   # Number of time points
+n <- n_locs * n_times  # Total number of observations
+M <- 3          # Number of nearest neighbors for NNGP
+nsim <- 400    # Number of MCMC simulations
+burn <- 200     # Burn-in period
+```
+
+## Step 2: Simulate Spatial Coordinates
+
+Generate random spatial coordinates in a 10x10 grid.
+
+```{r}
+coords <- cbind(runif(n_locs, 0, 10), runif(n_locs, 0, 10))
+plot(coords, pch = 19, xlab = "X", ylab = "Y", main = "Simulated Spatial Locations")
+```
+
+## Step 3: Simulate Covariates
+Create a simple covariate matrix X with an intercept and one predictor.
+
+```{r}
+X <- matrix(c(rep(1, n), rnorm(n)), ncol = 2)
+colnames(X) <- c("Intercept", "X1")
+head(X)
+```
+
+## Step 4: Simulate Spatial and Temporal Effects
+
+Simulate spatial and temporal covariance matrices using an exponential decay function.
+
+```{r}
+# Number of locations and time points
+n_locs <- 10    # spatial locations
+n_times <- 10   # time points
+n <- n_locs * n_times  # total observations
+
+# Generate spatial coordinates for 10 locations
+coords <- cbind(runif(n_locs, 0, 10), runif(n_locs, 0, 10))
+
+# Create a time vector (assuming evenly spaced time points)
+time_points <- seq(1, n_times)
+
+# Expand spatial coordinates: repeat each spatial location for each time point
+# Not actually necessary for use of package, just for later analysis
+coords_st <- do.call(rbind, replicate(n_times, coords, simplify = FALSE))
+# Create a time index for each observation
+time_index <- rep(time_points, each = n_locs)
+
+# Recompute the full spatial distance matrix for all observations (100 x 100)
+Ds <- as.matrix(dist(coords))
+
+# Compute the full temporal distance matrix for all observations (100 x 100)
+Dt <- as.matrix(dist(time_points))
+
+# Create spatial and temporal design matrices, indicates which observations
+# correspond to which positions spatially and temporally
+Vs <- as.matrix(sparseMatrix(i = 1:n, j = rep(1:10, 10), x = rep(1, n)))
+Vt <- as.matrix(sparseMatrix(i = 1:n, j = time_index, x = rep(1, n)))
+
+# Create spatial and temporal covariance matrices
+# Initialize kernel parameters
+cov_scale <- 0.5
+dist_scale_space <- 0.3
+dist_scale_time <- 2
+# Spatial 
+Cs <- (cov_scale^2) * exp(-dist_scale_space * Ds)
+# Temporal
+Ct <- (cov_scale^2) * exp(-Dt / (dist_scale_time ^ 2))
+```
+
+## Step 5: Simulate Response Variable
+Generate a ZINB response variable with spatial-temporal effects.
+
+```{r}
+# Simulate latent spatial-temporal effects
+err <- 0.1
+spatial_effect <- rmvnorm(n = 1, sigma = Cs + diag(err, 10))
+temporal_effect <- rmvnorm(n = 1, sigma = Ct + diag(err, 10))
+eta <- X %*% c(1, 0.5) + Vs %*% t(as.matrix(spatial_effect)) + Vt %*% t(as.matrix(temporal_effect))
+
+# ZINB parameters
+phi <- 2  # Dispersion parameter
+pi <- plogis(-1 + 0.3 * X[, 2])  # Zero-inflation probability
+mu <- exp(eta)  # Mean of NB component
+
+# Simulate ZINB data
+y <- numeric(n)
+for (i in 1:n) {
+  if (runif(1) < pi[i]) {
+    y[i] <- 0  # Zero-inflated part
+  } else {
+    y[i] <- rnbinom(1, size = phi, mu = mu[i])  # NB part
+  }
+}
+
+# Expand coords for spatial-temporal grid
+coords_st <- expand.grid(x = coords[, 1], y = coords[, 2], t = time_points)
+coords_st <- as.matrix(coords_st[, 1:2])  # Only spatial coords for NNGP
+
+# Summary of y
+summary(y)
+hist(y, breaks = 30, main = "Histogram of Simulated ZINB Counts")
+```
+
+## Running ZINB_NNGP
+
+Now, apply the ZINB_NNGP function to the simulated data.
+
+```{r}
+# Expanded coordinates for all observations (100 x 2)
+# (coords_st was already computed as the expanded grid)
+
+# Now call the function with observation-level covariance matrices:
+output <- ZINB_NNGP(
+  X = X,               # 100 x 2
+  y = y,               # length 100
+  coords = coords,  # 100 x 2 expanded coordinates
+  Vs = Vs,         # 100 x 100 covariance matrix
+  Vt = Vt,         # 100 x 100 covariance matrix
+  Ds = Ds,         # 100 x 100 distance matrix
+  Dt = Dt,         # 100 x 100 distance matrix
+  M = M,
+  nsim = nsim,
+  burn = burn,
+  save_ypred = TRUE
+)
+
+```
+
+## Exploring the Output
+
+Examine the structure of the output and summarize key results.
+
+```{r}
+# Structure of the output
+str(output)
+
+# Summary of posterior means (example, adjust based on actual output structure)
+if (!is.null(output$Beta)) {
+  cat("Posterior means of beta:\n")
+  print(colMeans(output$Beta))
+}
+
+# Plot predicted vs observed values (if available)
+if (!is.null(output$Y_pred)) {
+  plot(y, colMeans(output$Y_pred), pch = 19, 
+       xlab = "Observed", ylab = "Predicted", 
+       main = "Predicted vs Observed Counts")
+  abline(0, 1, col = "red")
+}
+```
+
+## Conclusion
+
+This demonstration showcased how to simulate spatial-temporal data and fit a ZINB model with NNGP using the ZINB_NNGP function. The simulated data included spatial and temporal effects, and the model accounted for zero-inflation and overdispersion. Users can extend this example by adjusting parameters, adding more covariates, or applying it to real data.
+

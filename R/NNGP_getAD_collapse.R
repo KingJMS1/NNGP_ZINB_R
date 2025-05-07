@@ -20,7 +20,7 @@ getAD <- function(neardist, neardistM, N, M, phi) {
             temp_neardistM[lower.tri(temp_neardistM, diag = FALSE)] <- exp(-phi * neardistM[i-1, 1:((count_NN * (count_NN - 1)) %/% 2)])
             temp_neardistM <- matrix(unlist(temp_neardistM), nrow=count_NN, ncol=count_NN)
             temp_neardistM <- t(temp_neardistM) + temp_neardistM - diag(diag(temp_neardistM))
-        }        
+        }
         
         L <- chol(temp_neardistM) # m by m when i > m+1
 
