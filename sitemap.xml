@@ -1,12 +1,19 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>https://kingjms1.github.io/NNGP_ZINB_R/404.html</loc></url>
 <url><loc>https://kingjms1.github.io/NNGP_ZINB_R/LICENSE-text.html</loc></url>
+<url><loc>https://kingjms1.github.io/NNGP_ZINB_R/articles/HuangExplanation.html</loc></url>
 <url><loc>https://kingjms1.github.io/NNGP_ZINB_R/articles/index.html</loc></url>
 <url><loc>https://kingjms1.github.io/NNGP_ZINB_R/articles/simulated_data.html</loc></url>
 <url><loc>https://kingjms1.github.io/NNGP_ZINB_R/authors.html</loc></url>
 <url><loc>https://kingjms1.github.io/NNGP_ZINB_R/index.html</loc></url>
 <url><loc>https://kingjms1.github.io/NNGP_ZINB_R/reference/NNMatrix.html</loc></url>
 <url><loc>https://kingjms1.github.io/NNGP_ZINB_R/reference/ZINB_NNGP.html</loc></url>
+<url><loc>https://kingjms1.github.io/NNGP_ZINB_R/reference/estimate.html</loc></url>
+<url><loc>https://kingjms1.github.io/NNGP_ZINB_R/reference/getAD.html</loc></url>
+<url><loc>https://kingjms1.github.io/NNGP_ZINB_R/reference/get_NN_dist.html</loc></url>
+<url><loc>https://kingjms1.github.io/NNGP_ZINB_R/reference/get_NN_distM.html</loc></url>
+<url><loc>https://kingjms1.github.io/NNGP_ZINB_R/reference/get_NN_ind.html</loc></url>
+<url><loc>https://kingjms1.github.io/NNGP_ZINB_R/reference/i_dist.html</loc></url>
 <url><loc>https://kingjms1.github.io/NNGP_ZINB_R/reference/index.html</loc></url>
 </urlset>
 

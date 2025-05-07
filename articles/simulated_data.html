@@ -6,7 +6,13 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>A Simple Simulation • ZINB.GP</title>
-<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
+  window.MathJax = {
+    chtml: {
+      fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
+    }
+  };
+</script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -20,7 +26,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ZINB.GP</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.0.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,7 +39,8 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="../articles/simulated_data.html">A Simple Simulation</a></li>
+<li><a class="dropdown-item" href="../articles/HuangExplanation.html">Demonstration of ZINB_NNGP with Simulated Spatial-Temporal Data</a></li>
+    <li><a class="dropdown-item" href="../articles/simulated_data.html">A Simple Simulation</a></li>
   </ul>
 </li>
       </ul>
@@ -261,8 +268,8 @@ samples were selected to be at risk.</p>
 <span><span class="va">at_risk</span> <span class="op">&lt;-</span> <span class="va">output</span><span class="op">$</span><span class="va">at_risk</span></span>
 <span><span class="va">sim_p_at_risk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">at_risk</span>, <span class="fl">2</span>, <span class="va">mean</span><span class="op">)</span></span>
 <span><span class="va">sim_p_at_risk</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">20</span><span class="op">]</span></span>
-<span><span class="co">#&gt;  [1] 0.37 0.22 0.14 1.00 0.71 0.93 1.00 0.92 0.80 0.83 0.84 0.48 0.34 1.00 0.90</span></span>
-<span><span class="co">#&gt; [16] 0.56 0.60 1.00 0.96 1.00</span></span></code></pre></div>
+<span><span class="co">#&gt;  [1] 0.48 0.44 0.37 1.00 0.76 0.94 1.00 0.95 0.82 0.88 0.88 0.56 0.55 1.00 0.91</span></span>
+<span><span class="co">#&gt; [16] 0.63 0.70 1.00 0.86 1.00</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
