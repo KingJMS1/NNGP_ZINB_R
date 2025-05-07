@@ -26,10 +26,8 @@ Load the necessary libraries for this demonstration.
 
 ```{r}
 library(ZINB.GP)
-library(sp)
 library(mvtnorm)
 library(Matrix)
-library(fields)  # For spatial simulation and visualization
 set.seed(123)    # For reproducibility
 ```
 
