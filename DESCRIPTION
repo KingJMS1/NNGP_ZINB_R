@@ -1,6 +1,6 @@
 Package: ZINB.GP
 Title: Zero Inflated Negative Binomial model Using Gaussian Processes
-Version: 0.0.0.9000
+Version: 0.0.1.0
 Authors@R: c(
     person("Qing", "He", role = c("aut")),
     person("Mahlon", "Scott", email = "mahlon.scott@ucf.edu", role = c("aut")),

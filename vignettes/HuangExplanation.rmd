@@ -4,7 +4,7 @@ author: "Hsin-Hsiung Huang and Mahlon Scott"
 date: "March 07, 2025"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Additional Example: ZINB_NNGP}
+  %\VignetteIndexEntry{Demonstration of ZINB_NNGP with Simulated Spatial-Temporal Data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

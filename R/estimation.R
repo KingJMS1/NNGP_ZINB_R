@@ -1,3 +1,5 @@
+#' estimate
+#' @description Draw y from posterior distribution
 estimate <- function(X, alpha, beta, Vs, Vt, a, b, c, d, eps1s, eps1t, eps2s, eps2t, r) {
     N <- nrow(X)
     eta1 <- X %*% alpha + Vs %*% (a + eps1s) + Vt %*% (b + eps1t)

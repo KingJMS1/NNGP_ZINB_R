@@ -1,8 +1,10 @@
-#### distance matrix for location i and its neighbors ####
+#' i_dist
+#' @description distance matrix for location i and its neighbors
 i_dist <- function(i, neighbor_index, s) {
     dist(s[c(i, neighbor_index[[i - 1]]), ])
 }
 
+#' get_NN_distM
 get_NN_distM <- function(ind, ind_distM_d, M) {
     if (ind < M) {
         l <- ind
@@ -17,6 +19,7 @@ get_NN_distM <- function(ind, ind_distM_d, M) {
     return(M_i)
 }
 
+#' get_NN_dist
 get_NN_dist <- function(ind, ind_distM_d, M) {
     if (ind < M) {
         l <- ind
@@ -28,6 +31,7 @@ get_NN_dist <- function(ind, ind_distM_d, M) {
     return(D_i)
 }
 
+#' get_NN_ind
 get_NN_ind <- function(ind, ind_distM_i, M) {
     if (ind < M) {
         l <- ind
@@ -39,7 +43,8 @@ get_NN_ind <- function(ind, ind_distM_i, M) {
     return(D_i)
 }
 
-#' Create neighbord matrix with spNNGP
+#' NNMatrix
+#' @description Create neighbord matrix with spNNGP
 #' @importFrom spNNGP spConjNNGP
 NNMatrix <- function(coords, n.neighbors, n.omp.threads = 2,
                      search.type = "brute") {

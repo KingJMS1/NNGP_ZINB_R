@@ -2,7 +2,7 @@
 % Please edit documentation in R/ZINB_NNGP_final.R
 \name{ZINB_NNGP}
 \alias{ZINB_NNGP}
-\title{Run the ZINB NNGP model described in https://doi.org/10.1016/j.jspi.2023.106098.}
+\title{ZINB_NNGP}
 \usage{
 ZINB_NNGP(
   X,
@@ -52,13 +52,33 @@ ZINB_NNGP(
 }
 \value{
 A List of the following sampled values:
-Alpha, Beta, A, B, C, D,
-Eps1s, Eps2s, Eps1t, Eps2t,
-L1t, Sigma1t, L2t, Sigma2t,
-Phi_bin, Sigma1s, Phi_nb, Sigma2s,
-Sigma_eps1s, Sigma_eps2s, Sigma_eps1t, Sigma_eps2t,
-R, R2,
-at_risk, Y_pred if save_YPRED = TRUE
+\itemize{
+\item {\strong{Alpha:} } {Model coefficients for logit model}
+\item {\strong{Beta:} } {Model coefficients for NB model}
+\item {\strong{A:} } {Portion of spatial random effect in the logit model explained by kernel}
+\item {\strong{B:} } {Portion of temporal random effect in the logit model explained by kernel}
+\item {\strong{C:} } {Portion of spatial random effect in the NB model explained by kernel}
+\item {\strong{D:} } {Portion of temporal random effect in the NB model explained by kernel}
+\item {\strong{Eps1s:} } {Portion of spatial random effect in the logit model explained by noise}
+\item {\strong{Eps2s:} } {Portion of spatial random effect in the NB model explained by noise}
+\item {\strong{Eps1t:} } {Portion of temporal random effect in the logit model explained by noise}
+\item {\strong{Eps2t:} } {Portion of temporal random effect in the NB model explained by noise}
+\item {\strong{L1t:} } {Length scale for temporal kernel in logit model, i.e. } \eqn{e^{-\frac{d^{2}}{2 l_{1t}^{2}}}}
+\item {\strong{Sigma1t:} } {Kernel scale parameter for above kernel, i.e. } \eqn{\sigma_{1t}^{2}e^{.}}
+\item {\strong{L2t:} } {Length scale for temporal kernel in NB model, i.e. } \eqn{e^{-\frac{d^{2}}{2 l_{1t}^{2}}}}
+\item {\strong{Sigma2t:} } {Kernel scale parameter for above kernel, i.e. } \eqn{\sigma_{2t}^{2}e^{.}}
+\item {\strong{Phi_bin:} } {Length scale for spatial kernel in logit model, i.e. } \eqn{e^{-\Phi_{bin}d^{2}}}
+\item {\strong{Sigma1s:} } {Square root of multiplier for spatial kernel in logit model}
+\item {\strong{Phi_nb:} } {Length scale for spatial kernel in NB model, i.e. } \eqn{e^{-\Phi_{nb}d^{2}}}
+\item {\strong{Sigma2s:} } {Square root of multiplier for spatial kernel in NB model}
+\item {\strong{Sigma_eps1s:} } {Estimated Standard deviation for eps1s}
+\item {\strong{Sigma_eps2s:} } {Estimated Standard deviation for eps2s}
+\item {\strong{Sigma_eps1t:} } {Estimated Standard deviation for eps1t}
+\item {\strong{Sigma_eps2t:} } {Estimated Standard deviation for eps2t}
+\item {\strong{R:} } {Dispersion parameter for Negative Binomial distribution.}
+\item {\strong{at_risk:} } {At risk indicator for each observation}
+\item {\strong{Y_pred:} } {Predictions, sampled from the posterior distribution at each iteration, NULL if save_ypred is false}
+}
 }
 \description{
 Run the ZINB NNGP model described in https://doi.org/10.1016/j.jspi.2023.106098.

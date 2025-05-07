@@ -2,7 +2,7 @@
 % Please edit documentation in R/NNMatrix.R
 \name{NNMatrix}
 \alias{NNMatrix}
-\title{Create neighbord matrix with spNNGP}
+\title{NNMatrix}
 \usage{
 NNMatrix(coords, n.neighbors, n.omp.threads = 2, search.type = "brute")
 }

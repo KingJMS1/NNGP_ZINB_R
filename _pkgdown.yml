@@ -1,3 +1,4 @@
 url: https://kingjms1.github.io/NNGP_ZINB_R/
 template:
   bootstrap: 5
+  math-rendering: mathjax
