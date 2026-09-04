@@ -6,7 +6,7 @@
 #'
 #' @details At least one spatial or temporal GP must be active in the count or
 #'   zero-inflation component. Models with no active GP are outside this entry
-#'   point and return `NULL` with an explanatory message.
+#'   point and signal an error that points to standard GLM software instead.
 #'
 #' @param X Fixed-effect design matrix with one row per observation.
 #' @param y Non-negative integer count response.
@@ -19,8 +19,10 @@
 #' @param thin Store every `thin`-th iteration after burn-in.
 #' @param kern Kernel function accepting a distance matrix and length scale.
 #' @param save_ypred Whether to save posterior predictive draws.
-#' @param print_iter Print progress every `print_iter` iterations.
-#' @param print_progress Whether to print MCMC progress.
+#' @param print_iter Report progress every `print_iter` iterations when
+#'   `print_progress` is `TRUE`.
+#' @param print_progress Whether to report MCMC progress via `message()`; these
+#'   reports can be silenced with `suppressMessages()`.
 #' @param Vs Spatial random-effect design matrix with one row per observation
 #'   and the baseline spatial column omitted.
 #' @param Vt Temporal random-effect design matrix with one row per observation
@@ -78,12 +80,11 @@
 #' @export
 ZINB_GP <- function(X, y, coords, nsim = 5000, burn = 1000, use_count_gp = TRUE, use_inflation_gp = FALSE, thin = 1, kern = NULL, save_ypred = FALSE, print_iter = 100, print_progress = FALSE, Vs = NULL, Vt = NULL, Ds = NULL, Dt = NULL, ltPrior = NULL, lsPrior = NULL, sigmaPrior = NULL, noisePrior = NULL, mh_sd_r = NULL) 
 {
-    errMsg <- "Error: must specify at least 1 GP to use. Use optimization GLM software like INLA, MASS, glmmTMB, pscl, etc. to fit the model instead.\n"
+    errMsg <- "You must specify at least 1 GP to use. Use optimization GLM software like INLA, MASS, glmmTMB, pscl, etc. to fit the model instead."
     no_gp_design <- is.null(Vs) && is.null(Vt)
     no_gp_component <- !use_count_gp && !use_inflation_gp
     if (no_gp_design || no_gp_component) {
-        cat(errMsg)
-        return(NULL)
+        stop(errMsg)
     }
 
     validate_zinb_inputs(X, y, nsim, burn, thin)
@@ -100,8 +101,7 @@ ZINB_GP <- function(X, y, coords, nsim = 5000, burn = 1000, use_count_gp = TRUE,
         if (is.null(Vt))
         {
             # No GPS
-            cat(errMsg)
-            return(NULL)
+            stop(errMsg)
         }
         else
         {
@@ -148,8 +148,7 @@ ZINB_GP <- function(X, y, coords, nsim = 5000, burn = 1000, use_count_gp = TRUE,
                 else
                 {
                     # No GPS
-                    cat(errMsg)
-                    return(NULL)
+                    stop(errMsg)
                 }
             }
         }
@@ -184,8 +183,7 @@ ZINB_GP <- function(X, y, coords, nsim = 5000, burn = 1000, use_count_gp = TRUE,
                 else
                 {
                     # No GPS
-                    cat(errMsg)
-                    return(NULL)
+                    stop(errMsg)
                 }
             }
         }
@@ -216,8 +214,7 @@ ZINB_GP <- function(X, y, coords, nsim = 5000, burn = 1000, use_count_gp = TRUE,
                 else
                 {
                     # No GPS
-                    cat(errMsg)
-                    return(NULL)
+                    stop(errMsg)
                 }
             }
         }

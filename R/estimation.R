@@ -150,22 +150,41 @@ new_zinb_gp_fit <- function(output) {
 #'   Y_pred, eta_at_risk, and eta_count. Active predicted GP effects are
 #'   returned under A, B, C, and D, matching the fitted object.
 #' @examples
-#' \dontrun{
-#' inputs <- make_prediction_inputs(
-#'   coords = coords,
-#'   time_coords = time_coords,
-#'   coords_new = coords_new,
-#'   time_coords_new = time_coords_new
+#' # Fit a small spatial model, then predict at two new locations.
+#' cells <- expand.grid(spatial = seq_len(4), replicate = seq_len(12))
+#' Vs <- diag(4)[cells$spatial, -1, drop = FALSE]
+#' y <- c(
+#'   0, 0, 0, 0, 15, 1, 0, 0, 6, 0, 0, 0, 1, 6, 0, 0,
+#'   0, 0, 0, 1, 11, 0, 0, 0, 2, 0, 0, 0, 8, 0, 5, 0,
+#'   0, 4, 0, 0, 34, 0, 1, 0, 0, 2, 0, 1, 0, 0, 0, 3
 #' )
+#' X <- cbind("(Intercept)" = 1, x = as.numeric(scale(seq_along(y))))
+#' coords <- rbind(c(0, 0), c(1000, 0), c(0, 1000), c(1000, 1000))
+#'
+#' set.seed(1)
+#' fit <- ZINB_GP(
+#'   X = X,
+#'   y = y,
+#'   coords = coords,
+#'   nsim = 5,
+#'   burn = 1,
+#'   thin = 2,
+#'   use_count_gp = TRUE,
+#'   use_inflation_gp = FALSE,
+#'   Vs = Vs,
+#'   Ds = as.matrix(stats::dist(coords))
+#' )
+#'
+#' coords_new <- rbind(c(500, 500), c(250, 750))
+#' inputs <- make_prediction_inputs(coords = coords, coords_new = coords_new)
+#' X_new <- cbind("(Intercept)" = 1, x = c(-0.5, 0.5))
 #' predictions <- predict(
 #'   fit,
 #'   X = X_new,
 #'   Ds_new = inputs$Ds_new,
-#'   Dt_new = inputs$Dt_new,
-#'   Vs_new = inputs$Vs_new,
-#'   Vt_new = inputs$Vt_new
+#'   Vs_new = inputs$Vs_new
 #' )
-#' }
+#' predictions$Y_pred
 #' @export
 #' @importFrom stats predict
 predict.zinb_gp_fit <- function(

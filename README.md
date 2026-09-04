@@ -107,8 +107,8 @@ assess convergence and effective sample sizes before interpreting estimates.
 | `thin` | Save every `thin`-th post-burn-in iteration; defaults to 1. |
 | `kern` | Optional kernel function with arguments `(distance_matrix, length_scale)`. The default is the package squared-exponential kernel. |
 | `save_ypred` | Logical: retain posterior predictive draws and at-risk indicators. Defaults to `FALSE`. |
-| `print_iter` | Print progress after this many iterations when `print_progress = TRUE`; defaults to 100. |
-| `print_progress` | Logical: print MCMC progress; defaults to `FALSE`. |
+| `print_iter` | Report progress after this many iterations when `print_progress = TRUE`; defaults to 100. |
+| `print_progress` | Logical: report MCMC progress with `message()` (suppress with `suppressMessages()`); defaults to `FALSE`. |
 | `Vs` | Spatial random-effect design matrix with one row per observation. `make_y_Vs_Vt()` creates it from a location-by-time count matrix. Set to `NULL` when no spatial GP is wanted. |
 | `Vt` | Temporal random-effect design matrix with one row per observation. `make_y_Vs_Vt()` creates it from a location-by-time count matrix. Set to `NULL` when no temporal GP is wanted. |
 | `Ds` | Square spatial distance matrix, including the baseline location. Its diagonal must be zero and it must correspond to `Vs`. |

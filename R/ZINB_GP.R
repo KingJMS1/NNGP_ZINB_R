@@ -602,7 +602,7 @@ ZINB_GP_orig <- function(X, y, coords, Vs, Vt, Ds, Dt, nsim, burn, thin = 1, sav
                 y1s[j, ] <- y1
             }
         }
-        if ((i %% print_iter == 0) && (print_progress)) print(i)
+        if ((i %% print_iter == 0) && (print_progress)) message("Iteration ", i, " of ", nsim)
     }
     # Put the results into a list
     results <- list(
@@ -862,7 +862,7 @@ ZINB_GP_inflation <- function(X, y, coords, Vs, Vt, Ds, Dt, nsim, burn, thin = 1
                 y1s[j, ] <- y1
             }
         }
-        if ((i %% print_iter == 0) && (print_progress)) print(i)
+        if ((i %% print_iter == 0) && (print_progress)) message("Iteration ", i, " of ", nsim)
     }
     # Put the results into a list
     results <- list(
@@ -1119,7 +1119,7 @@ ZINB_GP_count <- function(X, y, coords, Vs, Vt, Ds, Dt, nsim, burn, thin = 1, sa
                 y1s[j, ] <- y1
             }
         }
-        if ((i %% print_iter == 0) && (print_progress)) print(i)
+        if ((i %% print_iter == 0) && (print_progress)) message("Iteration ", i, " of ", nsim)
     }
     # Put the results into a list
     results <- list(
@@ -1528,7 +1528,7 @@ ZINB_GP_spatial <- function(
         }
 
         if (print_progress && i %% print_iter == 0) {
-            print(i)
+            message("Iteration ", i, " of ", nsim)
         }
     }
 
@@ -1901,7 +1901,7 @@ ZINB_GP_spatial_count <- function(
         }
 
         if (print_progress && i %% print_iter == 0) {
-            print(i)
+            message("Iteration ", i, " of ", nsim)
         }
     }
 
@@ -2267,7 +2267,7 @@ ZINB_GP_spatial_inflation <- function(
         }
 
         if (print_progress && i %% print_iter == 0) {
-            print(i)
+            message("Iteration ", i, " of ", nsim)
         }
     }
 

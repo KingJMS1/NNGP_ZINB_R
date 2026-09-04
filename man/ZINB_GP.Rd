@@ -50,9 +50,11 @@ including the baseline level omitted from \code{Vs}.}
 
 \item{save_ypred}{Whether to save posterior predictive draws.}
 
-\item{print_iter}{Print progress every \code{print_iter} iterations.}
+\item{print_iter}{Report progress every \code{print_iter} iterations when
+\code{print_progress} is \code{TRUE}.}
 
-\item{print_progress}{Whether to print MCMC progress.}
+\item{print_progress}{Whether to report MCMC progress via \code{message()}; these
+reports can be silenced with \code{suppressMessages()}.}
 
 \item{Vs}{Spatial random-effect design matrix with one row per observation
 and the baseline spatial column omitted.}
@@ -101,7 +103,7 @@ processes are included.
 \details{
 At least one spatial or temporal GP must be active in the count or
 zero-inflation component. Models with no active GP are outside this entry
-point and return \code{NULL} with an explanatory message.
+point and signal an error that points to standard GLM software instead.
 }
 \examples{
 # A small synthetic spatial example.

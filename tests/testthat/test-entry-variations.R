@@ -236,11 +236,10 @@ test_that("combinations with no active GP are explicitly unsupported", {
     )
 
     for (args in unsupported) {
-        expect_output(
-            fit <- do.call(ZINB_GP, c(base_args, args)),
+        expect_error(
+            do.call(ZINB_GP, c(base_args, args)),
             "must specify at least 1 GP"
         )
-        expect_null(fit)
     }
 })
 
