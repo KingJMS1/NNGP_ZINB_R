@@ -79,11 +79,15 @@ ZINB_GP(
 
 - print_iter:
 
-  Print progress every `print_iter` iterations.
+  Report progress every `print_iter` iterations when `print_progress` is
+  `TRUE`.
 
 - print_progress:
 
-  Whether to print MCMC progress.
+  Whether to report MCMC progress via
+  [`message()`](https://rdrr.io/r/base/message.html); these reports can
+  be silenced with
+  [`suppressMessages()`](https://rdrr.io/r/base/message.html).
 
 - Vs:
 
@@ -182,7 +186,8 @@ A list containing posterior MCMC draws:
 
 At least one spatial or temporal GP must be active in the count or
 zero-inflation component. Models with no active GP are outside this
-entry point and return `NULL` with an explanatory message.
+entry point and signal an error that points to standard GLM software
+instead.
 
 ## Examples
 

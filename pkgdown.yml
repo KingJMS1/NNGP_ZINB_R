@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   oregon-landslides: oregon-landslides.html
   simulating-zinb-gp: simulating-zinb-gp.html
-last_built: 2026-07-30T21:49Z
+last_built: 2026-09-04T16:10Z
 urls:
   reference: https://kingjms1.github.io/GP_ZINB_R/reference
   article: https://kingjms1.github.io/GP_ZINB_R/articles

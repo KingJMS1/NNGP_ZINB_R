@@ -133,11 +133,13 @@ including the baseline level omitted from <code>Vs</code>.</p></dd>
 
 
 <dt id="arg-print-iter">print_iter<a class="anchor" aria-label="anchor" href="#arg-print-iter"></a></dt>
-<dd><p>Print progress every <code>print_iter</code> iterations.</p></dd>
+<dd><p>Report progress every <code>print_iter</code> iterations when
+<code>print_progress</code> is <code>TRUE</code>.</p></dd>
 
 
 <dt id="arg-print-progress">print_progress<a class="anchor" aria-label="anchor" href="#arg-print-progress"></a></dt>
-<dd><p>Whether to print MCMC progress.</p></dd>
+<dd><p>Whether to report MCMC progress via <code><a href="https://rdrr.io/r/base/message.html" class="external-link">message()</a></code>; these
+reports can be silenced with <code><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages()</a></code>.</p></dd>
 
 
 <dt id="arg-vs">Vs<a class="anchor" aria-label="anchor" href="#arg-vs"></a></dt>
@@ -221,7 +223,7 @@ baseline; its diagonal must be zero.</p></dd>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>At least one spatial or temporal GP must be active in the count or
 zero-inflation component. Models with no active GP are outside this entry
-point and return <code>NULL</code> with an explanatory message.</p>
+point and signal an error that points to standard GLM software instead.</p>
     </div>
 
     <div class="section level2">
